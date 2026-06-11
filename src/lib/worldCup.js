@@ -87,14 +87,32 @@ const STADIUM_TIME_ZONES = {
   16: 'America/Los_Angeles',
 }
 
-export async function fetchJson(url) {
-  const response = await fetch(url)
+export async function fetchJson(url, { retries = 0, timeoutMs = 30000 } = {}) {
+  let lastError
 
-  if (!response.ok) {
-    throw new Error(`Request failed: ${response.status}`)
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    const controller = new AbortController()
+    const timeout = window.setTimeout(() => controller.abort(), timeoutMs)
+
+    try {
+      const response = await fetch(url, { signal: controller.signal })
+
+      if (!response.ok) {
+        throw new Error(`Request failed: ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      lastError = error
+      if (attempt < retries) {
+        await new Promise((resolve) => window.setTimeout(resolve, 500))
+      }
+    } finally {
+      window.clearTimeout(timeout)
+    }
   }
 
-  return response.json()
+  throw lastError
 }
 
 function getTimeZoneOffset(date, timeZone) {

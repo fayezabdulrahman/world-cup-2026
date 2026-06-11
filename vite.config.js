@@ -9,6 +9,8 @@ export default defineConfig({
       '/api/worldcup': {
         target: 'https://worldcup26.ir',
         changeOrigin: true,
+        timeout: 60000,
+        proxyTimeout: 60000,
         rewrite: (path) => path.replace(/^\/api\/worldcup/, ''),
       },
       '/api/sportsdb': {

@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useState } from 'react'
+import { startTransition, useEffect, useRef, useState } from 'react'
 import fifaConfirmedSquads from './data/fifaConfirmedSquads.json'
 import teamPredictionProfiles from './data/teamPredictionProfiles.json'
 import './App.css'
@@ -32,6 +32,8 @@ function App() {
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [dataWarning, setDataWarning] = useState('')
+  const hasDashboardData = useRef(false)
   const [selectedMatchId, setSelectedMatchId] = useState('')
   const [selectedTeamId, setSelectedTeamId] = useState('')
   const [page, setPage] = useState(
@@ -46,17 +48,34 @@ function App() {
         if (isInitialLoad) setLoading(true)
         setError('')
 
-        const [gamesResponse, teamsResponse, stadiumsResponse, groupsResponse] =
-          await Promise.all([
-            fetchJson(`${WORLD_CUP_BASE}/get/games`),
-            fetchJson(`${WORLD_CUP_BASE}/get/teams`),
-            fetchJson(`${WORLD_CUP_BASE}/get/stadiums`),
-            fetchJson(`${WORLD_CUP_BASE}/get/groups`),
-          ])
+        const endpoints = [
+          ['games', fetchJson(`${WORLD_CUP_BASE}/get/games`)],
+          ['teams', fetchJson(`${WORLD_CUP_BASE}/get/teams`)],
+          ['stadiums', fetchJson(`${WORLD_CUP_BASE}/get/stadiums`)],
+          ['groups', fetchJson(`${WORLD_CUP_BASE}/get/groups`)],
+        ]
+        const responses = await Promise.allSettled(
+          endpoints.map(([, request]) => request),
+        )
 
         if (!active) return
 
-        const normalizedGames = (gamesResponse.games || [])
+        const successfulData = Object.fromEntries(
+          responses.flatMap((result, index) =>
+            result.status === 'fulfilled'
+              ? [[endpoints[index][0], result.value]]
+              : [],
+          ),
+        )
+        const failedEndpoints = responses.flatMap((result, index) =>
+          result.status === 'rejected' ? [endpoints[index][0]] : [],
+        )
+
+        if (responses.every((result) => result.status === 'rejected')) {
+          throw new Error('All dashboard feeds failed')
+        }
+
+        const normalizedGames = (successfulData.games?.games || [])
           .map((game) => ({
             ...game,
             date: parseMatchDate(
@@ -70,12 +89,18 @@ function App() {
           (game) => String(game.finished).toLowerCase() !== 'true',
         )
 
-        setDashboard({
-          games: normalizedGames,
-          teams: teamsResponse.teams || [],
-          stadiums: stadiumsResponse.stadiums || [],
-          groups: groupsResponse.groups || [],
-        })
+        setDashboard((current) => ({
+          games: successfulData.games ? normalizedGames : current.games,
+          teams: successfulData.teams?.teams || current.teams,
+          stadiums: successfulData.stadiums?.stadiums || current.stadiums,
+          groups: successfulData.groups?.groups || current.groups,
+        }))
+        hasDashboardData.current = true
+        setDataWarning(
+          failedEndpoints.length
+            ? `Some live data is delayed (${failedEndpoints.join(', ')}). Retrying automatically.`
+            : '',
+        )
 
         if (nextMatch) {
           setSelectedMatchId(nextMatch.id)
@@ -83,9 +108,15 @@ function App() {
         }
       } catch {
         if (!active) return
-        setError(
-          'The live data feed could not be reached right now. Try again in a moment.',
-        )
+        if (hasDashboardData.current) {
+          setDataWarning(
+            'The live providers are responding slowly. Showing the latest available data and retrying automatically.',
+          )
+        } else {
+          setError(
+            'The live data feed could not be reached right now. Try again in a moment.',
+          )
+        }
       } finally {
         if (active && isInitialLoad) setLoading(false)
       }
@@ -266,6 +297,7 @@ function App() {
       />
 
       <main className="dashboard">
+        {dataWarning && <p className="data-warning">{dataWarning}</p>}
         <section className="feature-grid">
           <FixturesSection
             upcomingFixtures={upcomingFixtures}
