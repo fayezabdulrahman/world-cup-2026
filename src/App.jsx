@@ -9,16 +9,17 @@ import HeroSection from './components/HeroSection'
 import LiveMatchPage from './components/LiveMatchPage'
 import LoadingState from './components/LoadingState'
 import PredictorSection from './components/PredictorSection'
+import RecentResultSection from './components/RecentResultSection'
 import SquadSection from './components/SquadSection'
 import TeamSnapshotCard from './components/TeamSnapshotCard'
 import { buildPredictionRows } from './lib/predictions'
+import { buildGroupStandings } from './lib/standings'
 import {
   buildSquadShape,
   fetchJson,
   getAgeOnTournamentStart,
   getStadiumTimeZone,
   getTeamFormation,
-  numberValue,
   normalizePosition,
   parseMatchDate,
   WORLD_CUP_BASE,
@@ -193,6 +194,10 @@ function App() {
   const upcomingFixtures = dashboard.games.filter(
     (game) => String(game.finished).toLowerCase() !== 'true',
   )
+  const latestCompletedMatch =
+    dashboard.games
+      .filter((game) => String(game.finished).toLowerCase() === 'true')
+      .sort((left, right) => right.date - left.date)[0] || null
   const selectedMatch =
     dashboard.games.find((game) => game.id === selectedMatchId) ||
     upcomingFixtures[0] ||
@@ -213,25 +218,11 @@ function App() {
     ? confirmedSquadMap[selectedTeam.fifa_code] || null
     : null
 
-  const groupTableRows = dashboard.groups
-    .map((group) => ({
-      ...group,
-      teams: group.teams
-        .map((entry) => ({
-          ...entry,
-          team: teamMap[String(entry.team_id)],
-        }))
-        .sort((left, right) => {
-          const pointGap = numberValue(right.pts) - numberValue(left.pts)
-          if (pointGap !== 0) return pointGap
-
-          const goalGap = numberValue(right.gd) - numberValue(left.gd)
-          if (goalGap !== 0) return goalGap
-
-          return numberValue(right.gf) - numberValue(left.gf)
-        }),
-    }))
-    .sort((left, right) => left.name.localeCompare(right.name))
+  const groupTableRows = buildGroupStandings(
+    dashboard.groups,
+    dashboard.games,
+    teamMap,
+  )
 
   const predictionRows = buildPredictionRows(
     dashboard.teams,
@@ -298,7 +289,7 @@ function App() {
         <div className="ambient ambient-left" />
         <div className="ambient ambient-right" />
         <LiveMatchPage
-          groups={dashboard.groups}
+          groups={groupTableRows}
           match={liveMatch}
           onBack={() => {
             window.location.hash = ''
@@ -341,6 +332,12 @@ function App() {
             predictionRows={predictionRows}
           />
         </section>
+
+        <RecentResultSection
+          match={latestCompletedMatch}
+          stadium={stadiumMap[String(latestCompletedMatch?.stadium_id)]}
+          teamMap={teamMap}
+        />
 
         <section className="command-grid">
           <SquadSection

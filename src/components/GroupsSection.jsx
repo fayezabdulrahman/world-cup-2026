@@ -7,7 +7,7 @@ function GroupsSection({ groupTableRows, onSelectTeam }) {
           <h2>Every group in one fast-scanning control room.</h2>
         </div>
         <p className="muted">
-          These standings are the same inputs driving the prediction engine.
+          Calculated from completed match results and used by the prediction engine.
         </p>
       </div>
 

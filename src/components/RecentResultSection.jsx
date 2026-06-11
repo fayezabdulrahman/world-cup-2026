@@ -1,0 +1,132 @@
+import { useEffect, useState } from 'react'
+
+const ESPN_BASE = '/api/espn'
+const SUMMARY_STATS = [
+  { name: 'totalShots', label: 'Shots' },
+  { name: 'shotsOnTarget', label: 'On target' },
+  { name: 'possessionPct', label: 'Possession', suffix: '%' },
+  { name: 'totalPasses', label: 'Passes' },
+  { name: 'passPct', label: 'Pass accuracy', ratio: true },
+  { name: 'wonCorners', label: 'Corners' },
+]
+
+function getDateKey(date) {
+  return [
+    date.getUTCFullYear(),
+    String(date.getUTCMonth() + 1).padStart(2, '0'),
+    String(date.getUTCDate()).padStart(2, '0'),
+  ].join('')
+}
+
+function getTeamStats(team) {
+  return Object.fromEntries(
+    (team?.statistics || []).map((stat) => [stat.name, stat.displayValue]),
+  )
+}
+
+function formatValue(value, stat) {
+  if (value == null) return '–'
+  if (stat.ratio) return `${Math.round(Number(value) * 100)}%`
+  if (stat.suffix) return `${Math.round(Number(value))}${stat.suffix}`
+  return value
+}
+
+function RecentResultSection({ match, stadium, teamMap }) {
+  const [summary, setSummary] = useState(null)
+
+  useEffect(() => {
+    if (!match) return undefined
+
+    let active = true
+
+    async function loadSummary() {
+      try {
+        const scoreboardResponse = await fetch(
+          `${ESPN_BASE}/scoreboard?dates=${getDateKey(match.date)}`,
+        )
+        const scoreboard = await scoreboardResponse.json()
+        const event = scoreboard.events?.find((candidate) => {
+          const names = candidate.competitions?.[0]?.competitors?.map(
+            (entry) => entry.team?.displayName,
+          )
+          return (
+            names?.includes(match.home_team_name_en) &&
+            names?.includes(match.away_team_name_en)
+          )
+        })
+        if (!event) return
+
+        const summaryResponse = await fetch(
+          `${ESPN_BASE}/summary?event=${event.id}`,
+        )
+        const payload = await summaryResponse.json()
+        if (active) setSummary(payload)
+      } catch {
+        // The final score remains available from the tournament feed.
+      }
+    }
+
+    loadSummary()
+    return () => {
+      active = false
+    }
+  }, [match])
+
+  if (!match) return null
+
+  const homeTeam = teamMap[String(match.home_team_id)]
+  const awayTeam = teamMap[String(match.away_team_id)]
+  const homeStats = getTeamStats(
+    summary?.boxscore?.teams?.find((team) => team.homeAway === 'home'),
+  )
+  const awayStats = getTeamStats(
+    summary?.boxscore?.teams?.find((team) => team.homeAway === 'away'),
+  )
+
+  return (
+    <section className="card recent-result-card">
+      <div className="section-head">
+        <div>
+          <p className="eyebrow">Latest result</p>
+          <h2>Full-time score and match stats.</h2>
+        </div>
+        <span className="status-pill">Full-time</span>
+      </div>
+
+      <div className="result-scoreline">
+        <article>
+          <img src={homeTeam?.flag || match.home_team_flag} alt="" />
+          <strong>{match.home_team_name_en}</strong>
+        </article>
+        <div>
+          <strong>
+            {match.home_score} – {match.away_score}
+          </strong>
+          <span>
+            Group {match.group} · {stadium?.fifa_name || match.stadium_name}
+          </span>
+        </div>
+        <article>
+          <img src={awayTeam?.flag || match.away_team_flag} alt="" />
+          <strong>{match.away_team_name_en}</strong>
+        </article>
+      </div>
+
+      {summary?.boxscore?.teams?.length ? (
+        <div className="result-stats">
+          {SUMMARY_STATS.map((stat) => (
+            <article key={stat.name}>
+              <strong>{formatValue(homeStats[stat.name], stat)}</strong>
+              <span>{stat.label}</span>
+              <strong>{formatValue(awayStats[stat.name], stat)}</strong>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p className="muted">Detailed final statistics are loading.</p>
+      )}
+    </section>
+  )
+}
+
+export default RecentResultSection
