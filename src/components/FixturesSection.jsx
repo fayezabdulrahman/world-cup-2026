@@ -44,12 +44,15 @@ function FixturesSection({
             >
               <span className="fixture-topline">
                 <strong>
-                  {home?.fifa_code} vs {away?.fifa_code}
+                  {home?.fifa_code || fixture.home_team_code} vs{' '}
+                  {away?.fifa_code || fixture.away_team_code}
                 </strong>
                 <span>Group {fixture.group}</span>
               </span>
               <span>{formatViewerTime(fixture.date)}</span>
-              <span className="muted">{stadiumMap[fixture.stadium_id]?.city_en}</span>
+              <span className="muted">
+                {stadiumMap[fixture.stadium_id]?.city_en || fixture.stadium_city}
+              </span>
             </button>
           )
         })}
@@ -59,7 +62,13 @@ function FixturesSection({
         <div className="match-focus">
           <div className="match-glance">
             <div className="match-team">
-              <img src={teamMap[selectedMatch.home_team_id]?.flag} alt="" />
+              <img
+                src={
+                  teamMap[selectedMatch.home_team_id]?.flag ||
+                  selectedMatch.home_team_flag
+                }
+                alt=""
+              />
               <div>
                 <span>Home</span>
                 <strong>{selectedMatch.home_team_name_en}</strong>
@@ -73,7 +82,13 @@ function FixturesSection({
               </small>
             </div>
             <div className="match-team">
-              <img src={teamMap[selectedMatch.away_team_id]?.flag} alt="" />
+              <img
+                src={
+                  teamMap[selectedMatch.away_team_id]?.flag ||
+                  selectedMatch.away_team_flag
+                }
+                alt=""
+              />
               <div>
                 <span>Away</span>
                 <strong>{selectedMatch.away_team_name_en}</strong>
@@ -84,7 +99,9 @@ function FixturesSection({
           <div className="detail-grid">
             <article>
               <span>Stadium</span>
-              <strong>{selectedStadium?.fifa_name || 'TBD'}</strong>
+              <strong>
+                {selectedStadium?.fifa_name || selectedMatch.stadium_name || 'TBD'}
+              </strong>
               <small>
                 {selectedStadium?.city_en}, {selectedStadium?.country_en}
               </small>

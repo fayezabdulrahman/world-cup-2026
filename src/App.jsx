@@ -1,5 +1,6 @@
 import { startTransition, useEffect, useRef, useState } from 'react'
 import fifaConfirmedSquads from './data/fifaConfirmedSquads.json'
+import fixtureSnapshot from './data/fixtureSnapshot'
 import teamPredictionProfiles from './data/teamPredictionProfiles.json'
 import './App.css'
 import FixturesSection from './components/FixturesSection'
@@ -23,17 +24,29 @@ import {
   WORLD_CUP_BASE,
 } from './lib/worldCup'
 
+function normalizeGames(games) {
+  return games
+    .map((game) => ({
+      ...game,
+      date: parseMatchDate(
+        game.local_date,
+        getStadiumTimeZone(game.stadium_id),
+      ),
+    }))
+    .sort((left, right) => left.date - right.date)
+}
+
 function App() {
   const [dashboard, setDashboard] = useState({
     groups: [],
-    games: [],
+    games: normalizeGames(fixtureSnapshot),
     stadiums: [],
     teams: [],
   })
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [dataWarning, setDataWarning] = useState('')
-  const hasDashboardData = useRef(false)
+  const hasDashboardData = useRef(true)
   const [selectedMatchId, setSelectedMatchId] = useState('')
   const [selectedTeamId, setSelectedTeamId] = useState('')
   const [page, setPage] = useState(
@@ -45,11 +58,9 @@ function App() {
 
     async function loadDashboard(isInitialLoad = false) {
       try {
-        if (isInitialLoad) setLoading(true)
         setError('')
 
         const endpoints = [
-          ['games', fetchJson(`${WORLD_CUP_BASE}/get/games`)],
           ['teams', fetchJson(`${WORLD_CUP_BASE}/get/teams`)],
           ['stadiums', fetchJson(`${WORLD_CUP_BASE}/get/stadiums`)],
           ['groups', fetchJson(`${WORLD_CUP_BASE}/get/groups`)],
@@ -75,22 +86,8 @@ function App() {
           throw new Error('All dashboard feeds failed')
         }
 
-        const normalizedGames = (successfulData.games?.games || [])
-          .map((game) => ({
-            ...game,
-            date: parseMatchDate(
-              game.local_date,
-              getStadiumTimeZone(game.stadium_id),
-            ),
-          }))
-          .sort((left, right) => left.date - right.date)
-
-        const nextMatch = normalizedGames.find(
-          (game) => String(game.finished).toLowerCase() !== 'true',
-        )
-
         setDashboard((current) => ({
-          games: successfulData.games ? normalizedGames : current.games,
+          games: current.games,
           teams: successfulData.teams?.teams || current.teams,
           stadiums: successfulData.stadiums?.stadiums || current.stadiums,
           groups: successfulData.groups?.groups || current.groups,
@@ -102,10 +99,6 @@ function App() {
             : '',
         )
 
-        if (nextMatch) {
-          setSelectedMatchId(nextMatch.id)
-          setSelectedTeamId(nextMatch.home_team_id)
-        }
       } catch {
         if (!active) return
         if (hasDashboardData.current) {
@@ -122,12 +115,46 @@ function App() {
       }
     }
 
+    async function refreshGames() {
+      try {
+        const gamesResponse = await fetchJson(`${WORLD_CUP_BASE}/get/games`, {
+          timeoutMs: 60000,
+        })
+        if (!active) return
+
+        const normalizedGames = normalizeGames(gamesResponse.games || [])
+        const nextMatch = normalizedGames.find(
+          (game) => String(game.finished).toLowerCase() !== 'true',
+        )
+
+        setDashboard((current) => ({
+          ...current,
+          games: normalizedGames.length ? normalizedGames : current.games,
+        }))
+        setDataWarning('')
+
+        if (nextMatch) {
+          setSelectedMatchId((current) => current || nextMatch.id)
+          setSelectedTeamId((current) => current || nextMatch.home_team_id)
+        }
+      } catch {
+        if (active) {
+          setDataWarning(
+            'Live match updates are delayed. Showing the latest bundled fixtures and retrying automatically.',
+          )
+        }
+      }
+    }
+
     loadDashboard(true)
-    const refreshTimer = window.setInterval(loadDashboard, 30000)
+    refreshGames()
+    const dashboardRefreshTimer = window.setInterval(loadDashboard, 300000)
+    const gamesRefreshTimer = window.setInterval(refreshGames, 30000)
 
     return () => {
       active = false
-      window.clearInterval(refreshTimer)
+      window.clearInterval(dashboardRefreshTimer)
+      window.clearInterval(gamesRefreshTimer)
     }
   }, [])
 
@@ -226,7 +253,8 @@ function App() {
       : 'Title probabilities are currently driven by FIFA ranking position and qualifier-form profiles.'
 
   const openingMatch = dashboard.games[0]
-  const hostCities = new Set(dashboard.stadiums.map((stadium) => stadium.city_en)).size
+  const hostCities =
+    new Set(dashboard.stadiums.map((stadium) => stadium.city_en)).size || 16
 
   const teamFormation = getTeamFormation(selectedTeam)
   const confirmedPlayers = confirmedSquad?.players || []
@@ -292,7 +320,7 @@ function App() {
         hostCities={hostCities}
         selectedMatch={selectedMatch}
         selectedStadium={selectedStadium}
-        teamCount={dashboard.teams.length}
+        teamCount={dashboard.teams.length || 48}
         teamMap={teamMap}
       />
 

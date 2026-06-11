@@ -60,7 +60,10 @@ function HeroSection({
           <div className="scoreline">
             <div>
               <img
-                src={teamMap[selectedMatch?.home_team_id]?.flag}
+                src={
+                  teamMap[selectedMatch?.home_team_id]?.flag ||
+                  selectedMatch?.home_team_flag
+                }
                 alt=""
                 loading="lazy"
               />
@@ -69,7 +72,10 @@ function HeroSection({
             <strong>vs</strong>
             <div>
               <img
-                src={teamMap[selectedMatch?.away_team_id]?.flag}
+                src={
+                  teamMap[selectedMatch?.away_team_id]?.flag ||
+                  selectedMatch?.away_team_flag
+                }
                 alt=""
                 loading="lazy"
               />
@@ -79,7 +85,9 @@ function HeroSection({
           <p className="hero-timer">{formatCountDown(selectedMatch?.date)}</p>
           <p className="hero-meta">
             Group {selectedMatch?.group} · Matchday {selectedMatch?.matchday} ·{' '}
-            {selectedStadium?.fifa_name || selectedStadium?.name_en}
+            {selectedStadium?.fifa_name ||
+              selectedStadium?.name_en ||
+              selectedMatch?.stadium_name}
           </p>
         </section>
       </div>
