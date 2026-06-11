@@ -14,7 +14,7 @@ function TeamSnapshotCard({
       <div className="section-head">
         <div>
           <p className="eyebrow">Team snapshot</p>
-          <h2>Use the reclaimed space for the official squad profile.</h2>
+          <h2>Team Stats.</h2>
         </div>
         <a
           className="source-link"
