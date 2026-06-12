@@ -1,4 +1,5 @@
 import { startTransition, useEffect, useRef, useState } from 'react'
+import { Analytics } from '@vercel/analytics/react'
 import fifaConfirmedSquads from './data/fifaConfirmedSquads.json'
 import fixtureSnapshot from './data/fixtureSnapshot'
 import teamPredictionProfiles from './data/teamPredictionProfiles.json'
@@ -371,6 +372,7 @@ function App() {
           stadium={stadiumMap[String(matchCentreMatch?.stadium_id)]}
           teamMap={teamMap}
         />
+        <Analytics />
       </div>
     )
   }
@@ -413,6 +415,7 @@ function App() {
             />
           )}
         </main>
+        <Analytics />
       </div>
     )
   }
@@ -455,6 +458,7 @@ function App() {
           onSelectTeam={handleSelectTeam}
         />
       </main>
+      <Analytics />
     </div>
   )
 }
