@@ -10,6 +10,7 @@ import {
   getViewerTimeZoneLabel,
   numberValue,
 } from '../lib/worldCup'
+import { findMatchEvent, getScoreboardDateRange } from '../lib/espn'
 
 const ESPN_BASE = '/api/espn'
 const REFRESH_INTERVAL = 5000
@@ -26,14 +27,6 @@ const DISPLAY_STATS = [
   { name: 'offsides', label: 'Offsides' },
   { name: 'wonCorners', label: 'Corners' },
 ]
-
-function getDateKey(date) {
-  return [
-    date.getUTCFullYear(),
-    String(date.getUTCMonth() + 1).padStart(2, '0'),
-    String(date.getUTCDate()).padStart(2, '0'),
-  ].join('')
-}
 
 function getTeamStats(team) {
   return Object.fromEntries(
@@ -207,32 +200,33 @@ function LiveMatchPage({ groups, match, onBack, stadium, teamMap }) {
   const [timeline, setTimeline] = useState([])
   const [lastUpdated, setLastUpdated] = useState(null)
   const [feedError, setFeedError] = useState(false)
+  const matchEventId = match?.espn_event_id || ''
+  const matchDateTime = match?.date?.getTime()
+  const matchHomeName = match?.home_team_name_en
+  const matchAwayName = match?.away_team_name_en
+  const matchTimeElapsed = match?.time_elapsed
 
   useEffect(() => {
-    if (!match) return undefined
+    if (!matchDateTime || !matchHomeName || !matchAwayName) return undefined
 
     let active = true
-    let eventId = ''
+    let eventId = matchEventId
+    let refreshTimer
+    const feedMatch = {
+      home_team_name_en: matchHomeName,
+      away_team_name_en: matchAwayName,
+    }
 
     async function loadLiveDetails() {
       try {
         if (!eventId) {
           const scoreboardResponse = await fetch(
-            `${ESPN_BASE}/scoreboard?dates=${getDateKey(match.date)}`,
+            `${ESPN_BASE}/scoreboard?dates=${getScoreboardDateRange(new Date(matchDateTime))}`,
           )
           if (!scoreboardResponse.ok) throw new Error('Scoreboard lookup failed')
 
           const scoreboard = await scoreboardResponse.json()
-          const event = scoreboard.events?.find((candidate) => {
-            const names = candidate.competitions?.[0]?.competitors?.map(
-              (entry) => entry.team?.displayName,
-            )
-
-            return (
-              names?.includes(match.home_team_name_en) &&
-              names?.includes(match.away_team_name_en)
-            )
-          })
+          const event = findMatchEvent(scoreboard.events, feedMatch)
           eventId = event?.id || ''
         }
 
@@ -248,19 +242,33 @@ function LiveMatchPage({ groups, match, onBack, stadium, teamMap }) {
         setTimeline(summary.keyEvents || [])
         setLastUpdated(new Date())
         setFeedError(false)
+
+        if (summary.header?.competitions?.[0]?.status?.type?.state === 'in') {
+          refreshTimer = window.setTimeout(loadLiveDetails, REFRESH_INTERVAL)
+        }
       } catch {
-        if (active) setFeedError(true)
+        if (!active) return
+
+        setFeedError(true)
+        if (String(matchTimeElapsed).toLowerCase() === 'live') {
+          refreshTimer = window.setTimeout(loadLiveDetails, REFRESH_INTERVAL)
+        }
       }
     }
 
     loadLiveDetails()
-    const refreshTimer = window.setInterval(loadLiveDetails, REFRESH_INTERVAL)
 
     return () => {
       active = false
-      window.clearInterval(refreshTimer)
+      window.clearTimeout(refreshTimer)
     }
-  }, [match])
+  }, [
+    matchAwayName,
+    matchDateTime,
+    matchEventId,
+    matchHomeName,
+    matchTimeElapsed,
+  ])
 
   const homeTeam = teamMap[String(match?.home_team_id)]
   const awayTeam = teamMap[String(match?.away_team_id)]

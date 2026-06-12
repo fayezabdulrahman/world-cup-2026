@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { findMatchEvent, getScoreboardDateRange } from '../lib/espn'
 
 const ESPN_BASE = '/api/espn'
 const SUMMARY_STATS = [
@@ -9,14 +10,6 @@ const SUMMARY_STATS = [
   { name: 'passPct', label: 'Pass accuracy', ratio: true },
   { name: 'wonCorners', label: 'Corners' },
 ]
-
-function getDateKey(date) {
-  return [
-    date.getUTCFullYear(),
-    String(date.getUTCMonth() + 1).padStart(2, '0'),
-    String(date.getUTCDate()).padStart(2, '0'),
-  ].join('')
-}
 
 function getTeamStats(team) {
   return Object.fromEntries(
@@ -31,7 +24,7 @@ function formatValue(value, stat) {
   return value
 }
 
-function RecentResultSection({ match, stadium, teamMap }) {
+function RecentResultSection({ compact = false, match, stadium, teamMap }) {
   const [summary, setSummary] = useState(null)
 
   useEffect(() => {
@@ -41,23 +34,19 @@ function RecentResultSection({ match, stadium, teamMap }) {
 
     async function loadSummary() {
       try {
-        const scoreboardResponse = await fetch(
-          `${ESPN_BASE}/scoreboard?dates=${getDateKey(match.date)}`,
-        )
-        const scoreboard = await scoreboardResponse.json()
-        const event = scoreboard.events?.find((candidate) => {
-          const names = candidate.competitions?.[0]?.competitors?.map(
-            (entry) => entry.team?.displayName,
+        let eventId = match.espn_event_id
+
+        if (!eventId) {
+          const scoreboardResponse = await fetch(
+            `${ESPN_BASE}/scoreboard?dates=${getScoreboardDateRange(match.date)}`,
           )
-          return (
-            names?.includes(match.home_team_name_en) &&
-            names?.includes(match.away_team_name_en)
-          )
-        })
-        if (!event) return
+          const scoreboard = await scoreboardResponse.json()
+          eventId = findMatchEvent(scoreboard.events, match)?.id
+        }
+        if (!eventId) return
 
         const summaryResponse = await fetch(
-          `${ESPN_BASE}/summary?event=${event.id}`,
+          `${ESPN_BASE}/summary?event=${eventId}`,
         )
         const payload = await summaryResponse.json()
         if (active) setSummary(payload)
@@ -72,7 +61,19 @@ function RecentResultSection({ match, stadium, teamMap }) {
     }
   }, [match])
 
-  if (!match) return null
+  if (!match) {
+    if (!compact) return null
+
+    return (
+      <section className="card recent-result-card compact-result result-pending">
+        <div>
+          <p className="eyebrow">Latest result</p>
+          <h2>The first full-time result will appear here.</h2>
+        </div>
+        <span className="status-pill">Awaiting result</span>
+      </section>
+    )
+  }
 
   const homeTeam = teamMap[String(match.home_team_id)]
   const awayTeam = teamMap[String(match.away_team_id)]
@@ -84,7 +85,9 @@ function RecentResultSection({ match, stadium, teamMap }) {
   )
 
   return (
-    <section className="card recent-result-card">
+    <section
+      className={`card recent-result-card ${compact ? 'compact-result' : ''}`}
+    >
       <div className="section-head">
         <div>
           <p className="eyebrow">Latest result</p>
@@ -112,7 +115,7 @@ function RecentResultSection({ match, stadium, teamMap }) {
         </article>
       </div>
 
-      {summary?.boxscore?.teams?.length ? (
+      {!compact && summary?.boxscore?.teams?.length ? (
         <div className="result-stats">
           {SUMMARY_STATS.map((stat) => (
             <article key={stat.name}>
@@ -122,9 +125,9 @@ function RecentResultSection({ match, stadium, teamMap }) {
             </article>
           ))}
         </div>
-      ) : (
+      ) : !compact ? (
         <p className="muted">Detailed final statistics are loading.</p>
-      )}
+      ) : null}
     </section>
   )
 }

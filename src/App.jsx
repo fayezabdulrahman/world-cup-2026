@@ -9,7 +9,6 @@ import HeroSection from './components/HeroSection'
 import LiveMatchPage from './components/LiveMatchPage'
 import LoadingState from './components/LoadingState'
 import PredictorSection from './components/PredictorSection'
-import RecentResultSection from './components/RecentResultSection'
 import SquadSection from './components/SquadSection'
 import TeamSnapshotCard from './components/TeamSnapshotCard'
 import { buildPredictionRows } from './lib/predictions'
@@ -47,6 +46,7 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [dataWarning, setDataWarning] = useState('')
+  const [currentTime, setCurrentTime] = useState(() => Date.now())
   const hasDashboardData = useRef(true)
   const [selectedMatchId, setSelectedMatchId] = useState('')
   const [selectedTeamId, setSelectedTeamId] = useState('')
@@ -56,6 +56,7 @@ function App() {
 
   useEffect(() => {
     let active = true
+    let gamesRefreshTimer
 
     async function loadDashboard(isInitialLoad = false) {
       try {
@@ -96,7 +97,7 @@ function App() {
         hasDashboardData.current = true
         setDataWarning(
           failedEndpoints.length
-            ? `Some live data is delayed (${failedEndpoints.join(', ')}). Retrying automatically.`
+            ? `Some data could not be loaded (${failedEndpoints.join(', ')}). Refresh the page to try again.`
             : '',
         )
 
@@ -104,7 +105,7 @@ function App() {
         if (!active) return
         if (hasDashboardData.current) {
           setDataWarning(
-            'The live providers are responding slowly. Showing the latest available data and retrying automatically.',
+            'The data providers are responding slowly. Showing the latest available data.',
           )
         } else {
           setError(
@@ -116,7 +117,7 @@ function App() {
       }
     }
 
-    async function refreshGames() {
+    async function refreshGames(keepPollingOnFailure = false) {
       try {
         const gamesResponse = await fetchJson(`${WORLD_CUP_BASE}/get/games`, {
           timeoutMs: 60000,
@@ -127,35 +128,52 @@ function App() {
         const nextMatch = normalizedGames.find(
           (game) => String(game.finished).toLowerCase() !== 'true',
         )
+        const hasLiveMatch = normalizedGames.some(
+          (game) => String(game.time_elapsed).toLowerCase() === 'live',
+        )
 
         setDashboard((current) => ({
           ...current,
           games: normalizedGames.length ? normalizedGames : current.games,
         }))
+        setCurrentTime(Date.now())
         setDataWarning('')
 
         if (nextMatch) {
           setSelectedMatchId((current) => current || nextMatch.id)
           setSelectedTeamId((current) => current || nextMatch.home_team_id)
         }
+
+        if (hasLiveMatch && active) {
+          gamesRefreshTimer = window.setTimeout(
+            () => refreshGames(true),
+            5000,
+          )
+        }
       } catch {
         if (active) {
           setDataWarning(
-            'Live match updates are delayed. Showing the latest bundled fixtures and retrying automatically.',
+            keepPollingOnFailure
+              ? 'Live match updates are delayed. Retrying while the match is in play.'
+              : 'Match data could not be refreshed. Refresh the page to try again.',
           )
+
+          if (keepPollingOnFailure) {
+            gamesRefreshTimer = window.setTimeout(
+              () => refreshGames(true),
+              5000,
+            )
+          }
         }
       }
     }
 
     loadDashboard(true)
     refreshGames()
-    const dashboardRefreshTimer = window.setInterval(loadDashboard, 300000)
-    const gamesRefreshTimer = window.setInterval(refreshGames, 30000)
 
     return () => {
       active = false
-      window.clearInterval(dashboardRefreshTimer)
-      window.clearInterval(gamesRefreshTimer)
+      window.clearTimeout(gamesRefreshTimer)
     }
   }, [])
 
@@ -198,12 +216,19 @@ function App() {
     dashboard.games
       .filter((game) => String(game.finished).toLowerCase() === 'true')
       .sort((left, right) => right.date - left.date)[0] || null
+  const recentCompletedMatch =
+    latestCompletedMatch &&
+    currentTime - latestCompletedMatch.date.getTime() < 12 * 60 * 60 * 1000
+      ? latestCompletedMatch
+      : null
   const selectedMatch =
     dashboard.games.find((game) => game.id === selectedMatchId) ||
     upcomingFixtures[0] ||
     null
   const liveMatch =
-    dashboard.games.find((game) => game.time_elapsed === 'live') || selectedMatch
+    dashboard.games.find((game) => game.time_elapsed === 'live') ||
+    recentCompletedMatch ||
+    selectedMatch
 
   const selectedTeam =
     teamMap[String(selectedTeamId)] ||
@@ -242,10 +267,6 @@ function App() {
     totalMatchesPlayed > 0
       ? 'FIFA ranking, qualifier form, and live World Cup form are all influencing the title probabilities.'
       : 'Title probabilities are currently driven by FIFA ranking position and qualifier-form profiles.'
-
-  const openingMatch = dashboard.games[0]
-  const hostCities =
-    new Set(dashboard.stadiums.map((stadium) => stadium.city_en)).size || 16
 
   const teamFormation = getTeamFormation(selectedTeam)
   const confirmedPlayers = confirmedSquad?.players || []
@@ -307,11 +328,12 @@ function App() {
       <div className="ambient ambient-right" />
 
       <HeroSection
-        openingMatch={openingMatch}
-        hostCities={hostCities}
+        latestCompletedMatch={latestCompletedMatch}
+        latestCompletedStadium={
+          stadiumMap[String(latestCompletedMatch?.stadium_id)]
+        }
         selectedMatch={selectedMatch}
         selectedStadium={selectedStadium}
-        teamCount={dashboard.teams.length || 48}
         teamMap={teamMap}
       />
 
@@ -332,12 +354,6 @@ function App() {
             predictionRows={predictionRows}
           />
         </section>
-
-        <RecentResultSection
-          match={latestCompletedMatch}
-          stadium={stadiumMap[String(latestCompletedMatch?.stadium_id)]}
-          teamMap={teamMap}
-        />
 
         <section className="command-grid">
           <SquadSection

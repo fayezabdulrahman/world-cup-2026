@@ -15,7 +15,7 @@ function FixturesSection({
   const viewerTimeZone = getViewerTimeZoneLabel()
 
   return (
-    <article className="card spotlight-card">
+    <article className="card spotlight-card" id="fixtures">
       <div className="section-head">
         <div>
           <p className="eyebrow">Upcoming fixtures</p>
@@ -29,7 +29,7 @@ function FixturesSection({
         Open live match centre
       </a>
 
-      <div className="fixture-list" id="fixtures">
+      <div className="fixture-list">
         {upcomingFixtures.slice(0, 8).map((fixture) => {
           const home = teamMap[fixture.home_team_id]
           const away = teamMap[fixture.away_team_id]

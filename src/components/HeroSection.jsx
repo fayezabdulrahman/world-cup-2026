@@ -1,59 +1,39 @@
 import {
   formatCountDown,
-  formatViewerTime,
-  getViewerTimeZoneLabel,
   NAV_ITEMS,
 } from '../lib/worldCup'
+import RecentResultSection from './RecentResultSection'
 
 function HeroSection({
-  openingMatch,
-  hostCities,
+  latestCompletedMatch,
+  latestCompletedStadium,
   selectedMatch,
   selectedStadium,
   teamMap,
-  teamCount,
 }) {
-  const viewerTimeZone = getViewerTimeZoneLabel()
-
   return (
     <header className="hero-panel" id="overview">
-      <div className="topbar">
-        <div>
+      <nav className="site-nav" aria-label="Primary navigation">
+        <a className="site-brand" href="#overview">
           <p className="eyebrow">World Cup Dashboard</p>
           <h1>World Cup 2026</h1>
-        </div>
-        <nav className="jump-nav" aria-label="Section navigation">
+        </a>
+        <div className="jump-nav">
           {NAV_ITEMS.map((item) => (
             <a key={item.id} href={`#${item.id}`}>
               {item.label}
             </a>
           ))}
-        </nav>
-      </div>
+        </div>
+      </nav>
 
       <div className="hero-grid">
-        <section className="hero-copy card">
-          <p className="feature-tag">Live API-fed dashboard</p>
-          <p className="lead">
-            Track fixtures, kickoff times, squads, stadiums, and a live knockout
-            prediction engine powered by group-stage performance.
-          </p>
-          <div className="hero-metrics">
-            <article>
-              <span>Opening match</span>
-              <strong>{formatViewerTime(openingMatch?.date)}</strong>
-              <small>{viewerTimeZone}</small>
-            </article>
-            <article>
-              <span>Qualified nations</span>
-              <strong>{teamCount}</strong>
-            </article>
-            <article>
-              <span>Host cities</span>
-              <strong>{hostCities}</strong>
-            </article>
-          </div>
-        </section>
+        <RecentResultSection
+          compact
+          match={latestCompletedMatch}
+          stadium={latestCompletedStadium}
+          teamMap={teamMap}
+        />
 
         <section className="hero-highlight card">
           <p className="eyebrow">Next spotlight</p>
