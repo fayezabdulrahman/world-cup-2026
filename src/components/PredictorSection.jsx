@@ -3,7 +3,7 @@ function PredictorSection({ championPick, predictionMode, predictionRows }) {
     <article className="card predictor-card">
       <div className="section-head">
         <div>
-          <p className="eyebrow">AI winner guess</p>
+          <p className="eyebrow">AI Winner Prediction</p>
           <h2>Who has the strongest path-to-title profile right now?</h2>
         </div>
         <p className="muted">{predictionMode}</p>

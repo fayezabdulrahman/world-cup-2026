@@ -55,7 +55,7 @@ export const NAV_ITEMS = [
   { id: 'overview', label: 'Overview' },
   { id: 'live', label: 'Live Match' },
   // { id: 'fixtures', label: 'Fixtures' },
-  { id: 'predictions', label: 'AI Winner Guess' },
+  { id: 'predictions', label: 'AI Prediction' },
   { id: 'squads', label: 'Squads' },
   // { id: 'groups', label: 'Groups' },
 ]

@@ -4,10 +4,10 @@ function GroupsSection({ groupTableRows, onSelectTeam }) {
       <div className="section-head">
         <div>
           <p className="eyebrow">Group pulse</p>
-          <h2>Every group in one fast-scanning control room.</h2>
+          <h2>Group Latest Stats</h2>
         </div>
         <p className="muted">
-          Calculated from completed match results and used by the prediction engine.
+          Calculated from completed match results
         </p>
       </div>
 

@@ -225,14 +225,26 @@ function App() {
     currentTime - latestCompletedMatch.date.getTime() < 12 * 60 * 60 * 1000
       ? latestCompletedMatch
       : null
+  const completedMatchIds = new Set(
+    dashboard.games
+      .filter((game) => String(game.finished).toLowerCase() === 'true')
+      .map((game) => String(game.id)),
+  )
   const selectedMatch =
-    dashboard.games.find((game) => game.id === selectedMatchId) ||
+    upcomingFixtures.find((game) => game.id === selectedMatchId) ||
     upcomingFixtures[0] ||
     null
-  const liveMatch =
-    dashboard.games.find((game) => isMatchInPlay(game)) ||
+  const activeLiveMatch =
+    dashboard.games.find(
+      (game) =>
+        !completedMatchIds.has(String(game.id)) &&
+        isMatchInPlay(game),
+    ) || null
+  const matchCentreMatch =
+    activeLiveMatch ||
     recentCompletedMatch ||
     selectedMatch
+  const spotlightMatch = activeLiveMatch || selectedMatch
 
   const selectedTeam =
     teamMap[String(selectedTeamId)] ||
@@ -352,11 +364,11 @@ function App() {
         <div className="ambient ambient-right" />
         <LiveMatchPage
           groups={groupTableRows}
-          match={liveMatch}
+          match={matchCentreMatch}
           onBack={() => {
             window.location.hash = ''
           }}
-          stadium={stadiumMap[String(liveMatch?.stadium_id)]}
+          stadium={stadiumMap[String(matchCentreMatch?.stadium_id)]}
           teamMap={teamMap}
         />
       </div>
@@ -378,7 +390,7 @@ function App() {
               <p className="eyebrow">World Cup 2026</p>
               <h1>
                 {page === 'predictions'
-                  ? 'AI Winner Guess'
+                  ? 'AI Winner Prediction'
                   : 'Confirmed Squads'}
               </h1>
             </div>
@@ -415,8 +427,8 @@ function App() {
         latestCompletedStadium={
           stadiumMap[String(latestCompletedMatch?.stadium_id)]
         }
-        spotlightMatch={liveMatch}
-        spotlightStadium={stadiumMap[String(liveMatch?.stadium_id)]}
+        spotlightMatch={spotlightMatch}
+        spotlightStadium={stadiumMap[String(spotlightMatch?.stadium_id)]}
         teamMap={teamMap}
       />
 
