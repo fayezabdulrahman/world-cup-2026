@@ -11,6 +11,7 @@ import {
   numberValue,
 } from '../lib/worldCup'
 import { findMatchEvent, getScoreboardDateRange } from '../lib/espn'
+import SiteNav from './SiteNav'
 
 const ESPN_BASE = '/api/espn'
 const REFRESH_INTERVAL = 5000
@@ -331,6 +332,7 @@ function LiveMatchPage({ groups, match, onBack, stadium, teamMap }) {
 
   return (
     <main className="live-page">
+      <SiteNav activePage="live" />
       <header className="live-topbar">
         <button type="button" className="back-link" onClick={onBack}>
           Back to dashboard
@@ -565,7 +567,7 @@ function LiveMatchPage({ groups, match, onBack, stadium, teamMap }) {
             <div className="live-standing-row heading">
               <span>#</span>
               <span>Team</span>
-              <span>MP</span>
+              <span className="standing-mp">MP</span>
               <span>W</span>
               <span>D</span>
               <span>L</span>
@@ -589,7 +591,7 @@ function LiveMatchPage({ groups, match, onBack, stadium, teamMap }) {
                     </small>
                   )}
                 </span>
-                <span>{entry.mp}</span>
+                <span className="standing-mp">{entry.mp}</span>
                 <span>{entry.w}</span>
                 <span>{entry.d}</span>
                 <span>{entry.l}</span>

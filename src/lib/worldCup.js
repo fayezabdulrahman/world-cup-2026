@@ -54,9 +54,10 @@ export const TEAM_FORMATIONS = {
 export const NAV_ITEMS = [
   { id: 'overview', label: 'Overview' },
   { id: 'live', label: 'Live Match' },
-  { id: 'fixtures', label: 'Fixtures' },
-  { id: 'squad', label: 'Squad' },
-  { id: 'groups', label: 'Groups' },
+  // { id: 'fixtures', label: 'Fixtures' },
+  { id: 'predictions', label: 'AI Winner Guess' },
+  { id: 'squads', label: 'Squads' },
+  // { id: 'groups', label: 'Groups' },
 ]
 
 export const POSITION_LABELS = {
@@ -186,7 +187,7 @@ export function formatCountDown(date) {
   const now = new Date()
   const diff = date.getTime() - now.getTime()
 
-  if (diff <= 0) return 'Live window'
+  if (diff <= 0) return 'Match in play'
 
   const hours = Math.floor(diff / (1000 * 60 * 60))
   const days = Math.floor(hours / 24)
@@ -195,6 +196,15 @@ export function formatCountDown(date) {
   if (days === 0) return `${remainingHours}h to kickoff`
 
   return `${days}d ${remainingHours}h to kickoff`
+}
+
+export function isMatchInPlay(match) {
+  if (!match) return false
+  if (String(match.time_elapsed).toLowerCase() === 'live') return true
+  if (String(match.finished).toLowerCase() === 'true' || !match.date) return false
+
+  const timeSinceKickoff = Date.now() - match.date.getTime()
+  return timeSinceKickoff >= 0 && timeSinceKickoff <= 4 * 60 * 60 * 1000
 }
 
 export function numberValue(value) {

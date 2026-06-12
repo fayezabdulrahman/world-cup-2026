@@ -2,6 +2,7 @@ import {
   formatCountDown,
   formatViewerTime,
   getViewerTimeZoneLabel,
+  isMatchInPlay,
 } from '../lib/worldCup'
 
 function FixturesSection({
@@ -13,6 +14,7 @@ function FixturesSection({
   onSelectMatch,
 }) {
   const viewerTimeZone = getViewerTimeZoneLabel()
+  const selectedMatchIsLive = isMatchInPlay(selectedMatch)
 
   return (
     <article className="card spotlight-card" id="fixtures">
@@ -24,22 +26,18 @@ function FixturesSection({
         <p className="muted">Showing kickoff in your local timezone: {viewerTimeZone}.</p>
       </div>
 
-      <a className="live-match-cta" href="#live">
-        <span className="live-dot" />
-        Open live match centre
-      </a>
-
       <div className="fixture-list">
         {upcomingFixtures.slice(0, 8).map((fixture) => {
           const home = teamMap[fixture.home_team_id]
           const away = teamMap[fixture.away_team_id]
           const isActive = fixture.id === selectedMatch?.id
+          const isLive = isMatchInPlay(fixture)
 
           return (
             <button
               key={fixture.id}
               type="button"
-              className={`fixture-chip ${isActive ? 'active' : ''}`}
+              className={`fixture-chip ${isActive ? 'active' : ''} ${isLive ? 'live' : ''}`}
               onClick={() => onSelectMatch(fixture)}
             >
               <span className="fixture-topline">
@@ -71,15 +69,15 @@ function FixturesSection({
               />
               <div>
                 <span>Home</span>
-                <strong>{selectedMatch.home_team_name_en}</strong>
+                <strong className="truncate-name">
+                  {selectedMatch.home_team_name_en}
+                </strong>
               </div>
             </div>
             <div className="match-center">
               <span>{selectedMatch.type.toUpperCase()}</span>
               <strong>{formatViewerTime(selectedMatch.date)}</strong>
-              <small>
-                Local kickoff shown in {viewerTimeZone} · host time {selectedMatch.local_date}
-              </small>
+              <small>Host kickoff {selectedMatch.local_date}</small>
             </div>
             <div className="match-team">
               <img
@@ -91,7 +89,9 @@ function FixturesSection({
               />
               <div>
                 <span>Away</span>
-                <strong>{selectedMatch.away_team_name_en}</strong>
+                <strong className="truncate-name">
+                  {selectedMatch.away_team_name_en}
+                </strong>
               </div>
             </div>
           </div>
@@ -118,7 +118,9 @@ function FixturesSection({
             <article>
               <span>Countdown</span>
               <strong>{formatCountDown(selectedMatch.date)}</strong>
-              <small>From now to kickoff</small>
+              <small>
+                {selectedMatchIsLive ? 'Currently in play' : 'From now to kickoff'}
+              </small>
             </article>
           </div>
         </div>

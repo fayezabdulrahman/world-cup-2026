@@ -10,6 +10,7 @@ import LiveMatchPage from './components/LiveMatchPage'
 import LoadingState from './components/LoadingState'
 import PredictorSection from './components/PredictorSection'
 import SquadSection from './components/SquadSection'
+import SiteNav from './components/SiteNav'
 import TeamSnapshotCard from './components/TeamSnapshotCard'
 import { buildPredictionRows } from './lib/predictions'
 import { buildGroupStandings } from './lib/standings'
@@ -19,6 +20,7 @@ import {
   getAgeOnTournamentStart,
   getStadiumTimeZone,
   getTeamFormation,
+  isMatchInPlay,
   normalizePosition,
   parseMatchDate,
   WORLD_CUP_BASE,
@@ -50,9 +52,10 @@ function App() {
   const hasDashboardData = useRef(true)
   const [selectedMatchId, setSelectedMatchId] = useState('')
   const [selectedTeamId, setSelectedTeamId] = useState('')
-  const [page, setPage] = useState(
-    window.location.hash === '#live' ? 'live' : 'dashboard',
-  )
+  const [page, setPage] = useState(() => {
+    const hash = window.location.hash.slice(1)
+    return ['live', 'predictions', 'squads'].includes(hash) ? hash : 'dashboard'
+  })
 
   useEffect(() => {
     let active = true
@@ -179,7 +182,8 @@ function App() {
 
   useEffect(() => {
     const handleHashChange = () => {
-      setPage(window.location.hash === '#live' ? 'live' : 'dashboard')
+      const hash = window.location.hash.slice(1)
+      setPage(['live', 'predictions', 'squads'].includes(hash) ? hash : 'dashboard')
     }
 
     window.addEventListener('hashchange', handleHashChange)
@@ -226,7 +230,7 @@ function App() {
     upcomingFixtures[0] ||
     null
   const liveMatch =
-    dashboard.games.find((game) => game.time_elapsed === 'live') ||
+    dashboard.games.find((game) => isMatchInPlay(game)) ||
     recentCompletedMatch ||
     selectedMatch
 
@@ -271,30 +275,67 @@ function App() {
   const teamFormation = getTeamFormation(selectedTeam)
   const confirmedPlayers = confirmedSquad?.players || []
   const squadShape = buildSquadShape(confirmedPlayers, teamFormation)
-  const positionCounts = confirmedPlayers.reduce(
-    (counts, player) => {
-      counts[normalizePosition(player.position)] += 1
-      return counts
-    },
-    { GK: 0, DF: 0, MF: 0, FW: 0 },
-  )
-  const averageAge = confirmedPlayers.length
-    ? (
-        confirmedPlayers.reduce(
-          (sum, player) => sum + getAgeOnTournamentStart(player.dateOfBirth),
-          0,
-        ) / confirmedPlayers.length
-      ).toFixed(1)
-    : null
-  const averageHeight = confirmedPlayers.length
-    ? Math.round(
-        confirmedPlayers.reduce((sum, player) => sum + player.heightCm, 0) /
-          confirmedPlayers.length,
-      )
-    : null
-  const clubsRepresented = new Set(
-    confirmedPlayers.map((player) => player.club).filter(Boolean),
-  ).size
+
+  const getTeamSnapshot = (teamId, fallbackTeam) => {
+    const team = teamMap[String(teamId)] || fallbackTeam
+    const squad = team ? confirmedSquadMap[team.fifa_code] || null : null
+    const players = squad?.players || []
+    const formation = getTeamFormation(team)
+    const shape = buildSquadShape(players, formation)
+    const counts = players.reduce(
+      (result, player) => {
+        result[normalizePosition(player.position)] += 1
+        return result
+      },
+      { GK: 0, DF: 0, MF: 0, FW: 0 },
+    )
+
+    return {
+      team,
+      confirmedSquad: squad,
+      confirmedPlayers: players,
+      formation,
+      starters: shape.starters,
+      positionCounts: counts,
+      averageAge: players.length
+        ? (
+            players.reduce(
+              (sum, player) =>
+                sum + getAgeOnTournamentStart(player.dateOfBirth),
+              0,
+            ) / players.length
+          ).toFixed(1)
+        : null,
+      averageHeight: players.length
+        ? Math.round(
+            players.reduce((sum, player) => sum + player.heightCm, 0) /
+              players.length,
+          )
+        : null,
+      clubsRepresented: new Set(
+        players.map((player) => player.club).filter(Boolean),
+      ).size,
+    }
+  }
+
+  const fixtureTeamSnapshots = selectedMatch
+    ? [
+        getTeamSnapshot(selectedMatch.home_team_id, {
+          id: selectedMatch.home_team_id,
+          fifa_code: selectedMatch.home_team_code,
+          flag: selectedMatch.home_team_flag,
+          groups: selectedMatch.group,
+          name_en: selectedMatch.home_team_name_en,
+        }),
+        getTeamSnapshot(selectedMatch.away_team_id, {
+          id: selectedMatch.away_team_id,
+          fifa_code: selectedMatch.away_team_code,
+          flag: selectedMatch.away_team_flag,
+          groups: selectedMatch.group,
+          name_en: selectedMatch.away_team_name_en,
+        }),
+      ]
+    : []
 
   if (loading) {
     return <LoadingState />
@@ -322,6 +363,48 @@ function App() {
     )
   }
 
+  if (page === 'predictions' || page === 'squads') {
+    return (
+      <div className="page-shell">
+        <div className="ambient ambient-left" />
+        <div className="ambient ambient-right" />
+        <main className="detail-page">
+          <SiteNav activePage={page} />
+          <header className="detail-page-header">
+            <a className="back-link" href="#overview">
+              Back to overview
+            </a>
+            <div>
+              <p className="eyebrow">World Cup 2026</p>
+              <h1>
+                {page === 'predictions'
+                  ? 'AI Winner Guess'
+                  : 'Confirmed Squads'}
+              </h1>
+            </div>
+          </header>
+
+          {page === 'predictions' ? (
+            <PredictorSection
+              championPick={championPick}
+              predictionMode={predictionMode}
+              predictionRows={predictionRows}
+            />
+          ) : (
+            <SquadSection
+              confirmedSquad={confirmedSquad}
+              dashboardTeams={dashboard.teams}
+              onSelectTeam={handleSelectTeam}
+              selectedTeam={selectedTeam}
+              squadShape={squadShape}
+              teamFormation={teamFormation}
+            />
+          )}
+        </main>
+      </div>
+    )
+  }
+
   return (
     <div className="page-shell">
       <div className="ambient ambient-left" />
@@ -332,8 +415,8 @@ function App() {
         latestCompletedStadium={
           stadiumMap[String(latestCompletedMatch?.stadium_id)]
         }
-        selectedMatch={selectedMatch}
-        selectedStadium={selectedStadium}
+        spotlightMatch={liveMatch}
+        spotlightStadium={stadiumMap[String(liveMatch?.stadium_id)]}
         teamMap={teamMap}
       />
 
@@ -348,30 +431,10 @@ function App() {
             teamMap={teamMap}
             onSelectMatch={handleSelectMatch}
           />
-          <PredictorSection
-            championPick={championPick}
-            predictionMode={predictionMode}
-            predictionRows={predictionRows}
-          />
-        </section>
-
-        <section className="command-grid">
-          <SquadSection
-            confirmedSquad={confirmedSquad}
-            dashboardTeams={dashboard.teams}
-            onSelectTeam={handleSelectTeam}
-            selectedTeam={selectedTeam}
-            squadShape={squadShape}
-            teamFormation={teamFormation}
-          />
           <TeamSnapshotCard
-            averageAge={averageAge}
-            averageHeight={averageHeight}
-            clubsRepresented={clubsRepresented}
-            confirmedPlayers={confirmedPlayers}
-            confirmedSquad={confirmedSquad}
             fifaSourceUrl={fifaConfirmedSquads.sourceArticle}
-            positionCounts={positionCounts}
+            selectedMatch={selectedMatch}
+            teamSnapshots={fixtureTeamSnapshots}
           />
         </section>
 

@@ -91,7 +91,7 @@ function RecentResultSection({ compact = false, match, stadium, teamMap }) {
       <div className="section-head">
         <div>
           <p className="eyebrow">Latest result</p>
-          <h2>Full-time score and match stats.</h2>
+          <h2>Full-time score</h2>
         </div>
         <span className="status-pill">Full-time</span>
       </div>
@@ -99,7 +99,7 @@ function RecentResultSection({ compact = false, match, stadium, teamMap }) {
       <div className="result-scoreline">
         <article>
           <img src={homeTeam?.flag || match.home_team_flag} alt="" />
-          <strong>{match.home_team_name_en}</strong>
+          <strong className="truncate-name">{match.home_team_name_en}</strong>
         </article>
         <div>
           <strong>
@@ -111,7 +111,7 @@ function RecentResultSection({ compact = false, match, stadium, teamMap }) {
         </div>
         <article>
           <img src={awayTeam?.flag || match.away_team_flag} alt="" />
-          <strong>{match.away_team_name_en}</strong>
+          <strong className="truncate-name">{match.away_team_name_en}</strong>
         </article>
       </div>
 

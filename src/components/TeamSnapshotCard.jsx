@@ -1,20 +1,20 @@
-import { POSITION_LABELS } from '../lib/worldCup'
+import { getPlayerDisplayName, POSITION_LABELS } from '../lib/worldCup'
 
 function TeamSnapshotCard({
-  averageAge,
-  averageHeight,
-  clubsRepresented,
-  confirmedPlayers,
-  confirmedSquad,
   fifaSourceUrl,
-  positionCounts,
+  selectedMatch,
+  teamSnapshots,
 }) {
   return (
-    <article className="card confirmed-card">
+    <article className="card confirmed-card fixture-snapshot">
       <div className="section-head">
         <div>
           <p className="eyebrow">Team snapshot</p>
-          <h2>Team Stats.</h2>
+          <h2>
+            {selectedMatch
+              ? `${selectedMatch.home_team_name_en} vs ${selectedMatch.away_team_name_en}`
+              : 'Selected fixture squads'}
+          </h2>
         </div>
         <a
           className="source-link"
@@ -26,50 +26,92 @@ function TeamSnapshotCard({
         </a>
       </div>
 
-      {confirmedSquad ? (
-        <>
-          <div className="facts-grid">
-            <article className="fact-tile">
-              <span>Coach</span>
-              <strong>{confirmedSquad.coach}</strong>
-            </article>
-            <article className="fact-tile">
-              <span>Squad size</span>
-              <strong>{confirmedPlayers.length}</strong>
-            </article>
-            <article className="fact-tile">
-              <span>Average age</span>
-              <strong>{averageAge}</strong>
-            </article>
-            <article className="fact-tile">
-              <span>Average height</span>
-              <strong>{averageHeight} cm</strong>
-            </article>
-            <article className="fact-tile">
-              <span>Clubs represented</span>
-              <strong>{clubsRepresented}</strong>
-            </article>
-            <article className="fact-tile">
-              <span>Official source</span>
-              <strong>FIFA confirmed list</strong>
-            </article>
-          </div>
+      {teamSnapshots.some(({ confirmedSquad }) => confirmedSquad) ? (
+        <div className="fixture-squad-grid">
+          {teamSnapshots.map(
+            ({
+              averageAge,
+              averageHeight,
+              clubsRepresented,
+              confirmedSquad,
+              formation,
+              positionCounts,
+              starters,
+              team,
+            }) => (
+              <section className="snapshot-team" key={team?.id || confirmedSquad?.fifaCode}>
+                <header className="snapshot-team-head">
+                  <div className="team-badge">
+                    <img src={team?.flag} alt="" />
+                    <div>
+                      <strong>{team?.name_en || confirmedSquad?.teamName}</strong>
+                      <span>
+                        {confirmedSquad?.coach
+                          ? `Coach ${confirmedSquad.coach}`
+                          : 'Squad pending'}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="formation-chip">
+                    <span>Shape</span>
+                    <strong>{formation}</strong>
+                  </span>
+                </header>
 
-          <div className="position-pill-grid">
-            {Object.entries(positionCounts).map(([position, count]) => (
-              <article key={position} className="position-pill">
-                <span>{POSITION_LABELS[position]}</span>
-                <strong>{count}</strong>
-              </article>
-            ))}
-          </div>
-        </>
+                {confirmedSquad ? (
+                  <>
+                    <div className="team-stat-strip">
+                      <article>
+                        <span>Avg age</span>
+                        <strong>{averageAge}</strong>
+                      </article>
+                      <article>
+                        <span>Avg height</span>
+                        <strong>{averageHeight} cm</strong>
+                      </article>
+                      <article>
+                        <span>Clubs</span>
+                        <strong>{clubsRepresented}</strong>
+                      </article>
+                    </div>
+
+                    <div className="position-summary">
+                      {Object.entries(positionCounts).map(([position, count]) => (
+                        <span key={position}>
+                          {POSITION_LABELS[position]} <strong>{count}</strong>
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="snapshot-lineup">
+                      <p>Projected XI</p>
+                      <div>
+                        {starters.map((player) => (
+                          <span key={player.number}>
+                            <b>#{player.number}</b> {getPlayerDisplayName(player)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <p className="roster-note">
+                    No confirmed FIFA squad was matched for this team yet.
+                  </p>
+                )}
+              </section>
+            ),
+          )}
+        </div>
       ) : (
         <p className="roster-note">
-          Squad insights will appear here when an official FIFA squad match is
-          available.
+          Select an upcoming fixture to see both team squads and stats here.
         </p>
       )}
+
+      <a className="snapshot-page-link" href="#squads">
+        Explore all confirmed squads
+      </a>
     </article>
   )
 }
