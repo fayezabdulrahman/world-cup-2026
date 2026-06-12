@@ -1197,7 +1197,8 @@
 }
 
 .prediction-hero {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 1rem;
   padding: 1rem;
@@ -1221,6 +1222,137 @@
   height: 4rem;
 }
 
+.prediction-explainer {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.7fr) minmax(0, 1.3fr);
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(85, 231, 216, 0.16);
+  border-radius: 24px;
+  background: rgba(85, 231, 216, 0.055);
+}
+
+.prediction-explainer h3,
+.prediction-ranking-head h3 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 1.05rem;
+}
+
+.prediction-explainer > div:first-child > p:last-child {
+  margin-top: 0.65rem;
+  color: var(--text-soft);
+  font-size: 0.84rem;
+}
+
+.prediction-factors {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.prediction-factors article {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.prediction-factors article > strong {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: rgba(85, 231, 216, 0.12);
+  color: var(--accent-cool);
+}
+
+.prediction-factors b,
+.prediction-factors span {
+  display: block;
+}
+
+.prediction-factors span {
+  margin-top: 0.1rem;
+  color: var(--text-soft);
+  font-size: 0.76rem;
+}
+
+.prediction-favorite-copy {
+  min-width: 0;
+}
+
+.prediction-chance {
+  min-width: 8.5rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid rgba(85, 231, 216, 0.18);
+  border-radius: 18px;
+  background: rgba(85, 231, 216, 0.08);
+  text-align: center;
+}
+
+.prediction-chance strong,
+.prediction-chance span {
+  display: block;
+}
+
+.prediction-chance strong {
+  color: var(--accent-cool);
+  font-size: 1.45rem;
+}
+
+.prediction-chance span {
+  margin-top: 0.2rem;
+  color: var(--text-soft);
+  font-size: 0.68rem;
+}
+
+.favorite-factor-grid {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.favorite-factor-grid article {
+  padding: 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
+  background: rgba(4, 12, 31, 0.28);
+  text-align: center;
+}
+
+.favorite-factor-grid span,
+.favorite-factor-grid strong {
+  display: block;
+}
+
+.favorite-factor-grid span {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}
+
+.favorite-factor-grid strong {
+  margin-top: 0.2rem;
+}
+
+.prediction-ranking-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.2rem;
+}
+
+.prediction-ranking-head > span {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
 .prediction-table {
   display: grid;
   gap: 0.7rem;
@@ -1237,8 +1369,16 @@
 }
 
 .prediction-table article b {
+  display: grid;
+  justify-items: end;
   font-size: 1rem;
   color: var(--accent-cool);
+}
+
+.prediction-table article b small {
+  color: var(--text-muted);
+  font-size: 0.62rem;
+  font-weight: 400;
 }
 
 .prediction-table small {
@@ -1875,6 +2015,32 @@
   .prediction-table article {
     grid-template-columns: 1fr;
     text-align: center;
+  }
+
+  .prediction-explainer {
+    grid-template-columns: 1fr;
+  }
+
+  .prediction-hero {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .prediction-chance {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .favorite-factor-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .prediction-ranking-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .prediction-table article b {
+    justify-items: center;
   }
 
   .result-scoreline {

@@ -281,8 +281,8 @@ function App() {
   )
   const predictionMode =
     totalMatchesPlayed > 0
-      ? 'FIFA ranking, qualifier form, and live World Cup form are all influencing the title probabilities.'
-      : 'Title probabilities are currently driven by FIFA ranking position and qualifier-form profiles.'
+      ? 'The model starts with FIFA ranking and qualifying form, then updates each team using its World Cup results as the tournament progresses.'
+      : 'Before tournament results are available, the model uses FIFA ranking and qualifying form to create its starting prediction.'
 
   const teamFormation = getTeamFormation(selectedTeam)
   const confirmedPlayers = confirmedSquad?.players || []
