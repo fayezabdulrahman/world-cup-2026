@@ -194,7 +194,17 @@ function buildLiveStandings(group, match, teamMap) {
   return rows.sort(sortStandings)
 }
 
-function LiveMatchPage({ groups, match, onBack, stadium, teamMap }) {
+function LiveMatchPage({
+  activePage = 'live',
+  groups,
+  historical = false,
+  match,
+  matchOptions = [],
+  onBack,
+  onSelectMatch,
+  stadium,
+  teamMap,
+}) {
   const [activeTab, setActiveTab] = useState('stats')
   const [liveSummary, setLiveSummary] = useState(null)
   const [stats, setStats] = useState([])
@@ -284,8 +294,8 @@ function LiveMatchPage({ groups, match, onBack, stadium, teamMap }) {
   const effectiveMatch = useMemo(
     () => ({
       ...match,
-      home_score: liveHome?.score ?? match.home_score,
-      away_score: liveAway?.score ?? match.away_score,
+      home_score: liveHome?.score ?? match?.home_score,
+      away_score: liveAway?.score ?? match?.away_score,
     }),
     [liveAway?.score, liveHome?.score, match],
   )
@@ -319,12 +329,29 @@ function LiveMatchPage({ groups, match, onBack, stadium, teamMap }) {
   if (!match) {
     return (
       <main className="live-page">
-        <button type="button" className="back-link" onClick={onBack}>
-          Back to dashboard
-        </button>
+        <SiteNav activePage={activePage} />
         <section className="card live-empty">
-          <p className="eyebrow">Live match centre</p>
-          <h1>No match is available yet.</h1>
+          <p className="eyebrow">
+            {historical ? 'Past fixtures' : 'Live match centre'}
+          </p>
+          <h1>
+            {historical
+              ? 'No completed matches yet.'
+              : 'No live game currently.'}
+          </h1>
+          {historical ? (
+            <p>Completed fixtures will appear here once the final whistle goes.</p>
+          ) : (
+            <>
+              <p>
+                There is no World Cup match in play right now. You can revisit
+                completed games, scores, lineups, timelines, and match stats.
+              </p>
+              <a className="live-match-cta" href="#results">
+                View past fixtures
+              </a>
+            </>
+          )}
         </section>
       </main>
     )
@@ -332,17 +359,51 @@ function LiveMatchPage({ groups, match, onBack, stadium, teamMap }) {
 
   return (
     <main className="live-page">
-      <SiteNav activePage="live" />
+      <SiteNav activePage={activePage} />
       <header className="live-topbar">
         <button type="button" className="back-link" onClick={onBack}>
           Back to dashboard
         </button>
         <div className="live-refresh">
           <span className={isLive ? 'live-dot' : 'live-dot idle'} />
-          {isLive ? 'Updating every 5 seconds' : 'Match centre'}
+          {isLive
+            ? 'Updating every 5 seconds'
+            : historical
+              ? 'Completed match'
+              : 'Match centre'}
           {lastUpdated && <small>Last update {lastUpdated.toLocaleTimeString()}</small>}
         </div>
       </header>
+
+      {historical && (
+        <section className="card past-fixtures-card">
+          <div className="live-panel-head">
+            <div>
+              <p className="eyebrow">Past fixtures</p>
+              <h1>Completed matches</h1>
+            </div>
+            <span>{matchOptions.length} results</span>
+          </div>
+          <div className="past-fixture-list">
+            {matchOptions.map((fixture) => (
+              <button
+                key={fixture.id}
+                type="button"
+                className={fixture.id === match.id ? 'active' : ''}
+                onClick={() => onSelectMatch?.(fixture)}
+              >
+                <span>
+                  Group {fixture.group} · {formatViewerTime(fixture.date)}
+                </span>
+                <strong>
+                  {fixture.home_team_name_en} {fixture.home_score}–{fixture.away_score}{' '}
+                  {fixture.away_team_name_en}
+                </strong>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="card live-score-card">
         <div className="live-title-row">
@@ -390,7 +451,7 @@ function LiveMatchPage({ groups, match, onBack, stadium, teamMap }) {
         </div>
       </section>
 
-      <section className="card probability-card">
+      {!historical && <section className="card probability-card">
         <div className="probability-head">
           <div>
             <p className="eyebrow">Live win probability</p>
@@ -430,7 +491,7 @@ function LiveMatchPage({ groups, match, onBack, stadium, teamMap }) {
           Based on team strength, recent form, home advantage, current score,
           official live clock, and available live shot data.
         </p>
-      </section>
+      </section>}
 
       <nav className="live-tabs" aria-label="Live match sections">
         {['timeline', 'lineups', 'stats', 'standings'].map((tab) => (
@@ -515,7 +576,7 @@ function LiveMatchPage({ groups, match, onBack, stadium, teamMap }) {
           <div className="live-panel-head">
             <div>
               <p className="eyebrow">Team stats</p>
-              <h2>Live match numbers</h2>
+              <h2>{historical ? 'Final match numbers' : 'Live match numbers'}</h2>
             </div>
             <div className="stat-team-flags">
               <img src={homeTeam?.flag} alt="" />
@@ -547,8 +608,12 @@ function LiveMatchPage({ groups, match, onBack, stadium, teamMap }) {
           ) : (
             <p className="live-message">
               {feedError
-                ? 'The detailed stats feed is temporarily unavailable. Score and standings will keep updating.'
-                : 'Live statistics are loading from the match feed.'}
+                ? historical
+                  ? 'The detailed stats feed is unavailable for this completed match.'
+                  : 'The detailed stats feed is temporarily unavailable. Score and standings will keep updating.'
+                : historical
+                  ? 'Final statistics are loading from the match feed.'
+                  : 'Live statistics are loading from the match feed.'}
             </p>
           )}
         </section>

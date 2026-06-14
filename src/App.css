@@ -600,9 +600,68 @@
 .live-score-card,
 .live-panel,
 .live-empty,
-.probability-card {
+.probability-card,
+.past-fixtures-card {
   padding: 1.5rem;
   margin-top: 1rem;
+}
+
+.live-empty {
+  display: grid;
+  justify-items: start;
+  gap: 1rem;
+  min-height: 20rem;
+  align-content: center;
+}
+
+.live-empty h1,
+.past-fixtures-card h1 {
+  max-width: none;
+}
+
+.live-empty > p:not(.eyebrow) {
+  max-width: 42rem;
+  color: var(--text-soft);
+}
+
+.live-empty .live-match-cta {
+  margin: 0;
+}
+
+.past-fixture-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.past-fixture-list button {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--text-main);
+  text-align: left;
+  cursor: pointer;
+}
+
+.past-fixture-list button:hover,
+.past-fixture-list button.active {
+  border-color: rgba(85, 231, 216, 0.48);
+  background: rgba(85, 231, 216, 0.08);
+}
+
+.past-fixture-list span {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+.past-fixture-list strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .status-pill {
@@ -641,7 +700,8 @@
   width: 5.5rem;
   height: 5.5rem;
   border-radius: 24px;
-  object-fit: cover;
+  object-fit: contain;
+  padding: 0.55rem;
   background: rgba(255, 255, 255, 0.08);
 }
 
@@ -805,7 +865,9 @@
   width: 2rem;
   height: 2rem;
   border-radius: 10px;
-  object-fit: cover;
+  object-fit: contain;
+  padding: 0.18rem;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .live-stat-list,
@@ -1825,14 +1887,31 @@
 
 .loading-screen {
   min-height: 100vh;
+  min-height: 100svh;
   display: grid;
   place-items: center;
-  gap: 1rem;
+  padding: max(1.5rem, env(safe-area-inset-top))
+    max(1.25rem, env(safe-area-inset-right))
+    max(1.5rem, env(safe-area-inset-bottom))
+    max(1.25rem, env(safe-area-inset-left));
   background:
     radial-gradient(circle at top left, rgba(255, 132, 92, 0.35), transparent 30%),
     radial-gradient(circle at bottom right, rgba(70, 229, 214, 0.25), transparent 26%),
     var(--page-bg);
   color: var(--text-main);
+}
+
+.loading-content {
+  display: grid;
+  justify-items: center;
+  gap: 1.25rem;
+  width: min(100%, 32rem);
+  text-align: center;
+}
+
+.loading-content p {
+  color: var(--text-soft);
+  font-size: clamp(0.95rem, 4vw, 1.1rem);
 }
 
 .pulse-orb {
@@ -2207,6 +2286,10 @@
 
   .live-page {
     padding-inline: 0.9rem;
+  }
+
+  .past-fixture-list {
+    grid-template-columns: 1fr;
   }
 
   .live-standing-row {

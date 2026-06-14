@@ -9,12 +9,15 @@ const WORLD_CUP_GAMES_URL = 'https://worldcup26.ir/get/games'
 const TEAM_ALIASES = {
   'bosnia and herzegovina': 'bosnia herzegovina',
   'korea republic': 'south korea',
+  turkiye: 'turkey',
   'united states of america': 'united states',
 }
 
 function normalizeTeamName(value) {
   const normalized = String(value || '')
     .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/\bczech republic\b/g, 'czechia')
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()
@@ -31,14 +34,22 @@ function getCompetitor(event, homeAway) {
 function findEspnEvent(game, events) {
   const homeName = normalizeTeamName(game.home_team_name_en)
   const awayName = normalizeTeamName(game.away_team_name_en)
+  const homeCode = String(game.home_team_code || '').toUpperCase()
+  const awayCode = String(game.away_team_code || '').toUpperCase()
 
   return events.find((event) => {
     const home = getCompetitor(event, 'home')
     const away = getCompetitor(event, 'away')
+    const codesMatch =
+      homeCode &&
+      awayCode &&
+      home?.team?.abbreviation === homeCode &&
+      away?.team?.abbreviation === awayCode
 
     return (
-      normalizeTeamName(home?.team?.displayName) === homeName &&
-      normalizeTeamName(away?.team?.displayName) === awayName
+      codesMatch ||
+      (normalizeTeamName(home?.team?.displayName) === homeName &&
+        normalizeTeamName(away?.team?.displayName) === awayName)
     )
   })
 }

@@ -46,16 +46,18 @@ function App() {
     stadiums: [],
     teams: [],
   })
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [dataWarning, setDataWarning] = useState('')
-  const [currentTime, setCurrentTime] = useState(() => Date.now())
   const hasDashboardData = useRef(true)
   const [selectedMatchId, setSelectedMatchId] = useState('')
+  const [selectedCompletedMatchId, setSelectedCompletedMatchId] = useState('')
   const [selectedTeamId, setSelectedTeamId] = useState('')
   const [page, setPage] = useState(() => {
     const hash = window.location.hash.slice(1)
-    return ['live', 'predictions', 'squads'].includes(hash) ? hash : 'dashboard'
+    return ['live', 'results', 'predictions', 'squads'].includes(hash)
+      ? hash
+      : 'dashboard'
   })
 
   useEffect(() => {
@@ -140,7 +142,6 @@ function App() {
           ...current,
           games: normalizedGames.length ? normalizedGames : current.games,
         }))
-        setCurrentTime(Date.now())
         setDataWarning('')
 
         if (nextMatch) {
@@ -184,7 +185,11 @@ function App() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.slice(1)
-      setPage(['live', 'predictions', 'squads'].includes(hash) ? hash : 'dashboard')
+      setPage(
+        ['live', 'results', 'predictions', 'squads'].includes(hash)
+          ? hash
+          : 'dashboard',
+      )
     }
 
     window.addEventListener('hashchange', handleHashChange)
@@ -204,6 +209,12 @@ function App() {
     })
   }
 
+  const handleSelectCompletedMatch = (fixture) => {
+    startTransition(() => {
+      setSelectedCompletedMatchId(fixture.id)
+    })
+  }
+
   const teamMap = Object.fromEntries(
     dashboard.teams.map((team) => [String(team.id), team]),
   )
@@ -217,15 +228,10 @@ function App() {
   const upcomingFixtures = dashboard.games.filter(
     (game) => String(game.finished).toLowerCase() !== 'true',
   )
-  const latestCompletedMatch =
-    dashboard.games
-      .filter((game) => String(game.finished).toLowerCase() === 'true')
-      .sort((left, right) => right.date - left.date)[0] || null
-  const recentCompletedMatch =
-    latestCompletedMatch &&
-    currentTime - latestCompletedMatch.date.getTime() < 12 * 60 * 60 * 1000
-      ? latestCompletedMatch
-      : null
+  const completedMatches = dashboard.games
+    .filter((game) => String(game.finished).toLowerCase() === 'true')
+    .sort((left, right) => right.date - left.date)
+  const latestCompletedMatch = completedMatches[0] || null
   const completedMatchIds = new Set(
     dashboard.games
       .filter((game) => String(game.finished).toLowerCase() === 'true')
@@ -241,11 +247,11 @@ function App() {
         !completedMatchIds.has(String(game.id)) &&
         isMatchInPlay(game),
     ) || null
-  const matchCentreMatch =
-    activeLiveMatch ||
-    recentCompletedMatch ||
-    selectedMatch
   const spotlightMatch = activeLiveMatch || selectedMatch
+  const selectedCompletedMatch =
+    completedMatches.find((game) => game.id === selectedCompletedMatchId) ||
+    completedMatches[0] ||
+    null
 
   const selectedTeam =
     teamMap[String(selectedTeamId)] ||
@@ -364,12 +370,37 @@ function App() {
         <div className="ambient ambient-left" />
         <div className="ambient ambient-right" />
         <LiveMatchPage
+          key={activeLiveMatch?.id || 'live-empty'}
           groups={groupTableRows}
-          match={matchCentreMatch}
+          match={activeLiveMatch}
           onBack={() => {
             window.location.hash = ''
           }}
-          stadium={stadiumMap[String(matchCentreMatch?.stadium_id)]}
+          stadium={stadiumMap[String(activeLiveMatch?.stadium_id)]}
+          teamMap={teamMap}
+        />
+        <Analytics />
+      </div>
+    )
+  }
+
+  if (page === 'results') {
+    return (
+      <div className="page-shell">
+        <div className="ambient ambient-left" />
+        <div className="ambient ambient-right" />
+        <LiveMatchPage
+          activePage="results"
+          groups={groupTableRows}
+          historical
+          key={selectedCompletedMatch?.id || 'results-empty'}
+          match={selectedCompletedMatch}
+          matchOptions={completedMatches}
+          onBack={() => {
+            window.location.hash = ''
+          }}
+          onSelectMatch={handleSelectCompletedMatch}
+          stadium={stadiumMap[String(selectedCompletedMatch?.stadium_id)]}
           teamMap={teamMap}
         />
         <Analytics />

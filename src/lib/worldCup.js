@@ -54,6 +54,7 @@ export const TEAM_FORMATIONS = {
 export const NAV_ITEMS = [
   { id: 'overview', label: 'Overview' },
   { id: 'live', label: 'Live Match' },
+  { id: 'results', label: 'Past Fixtures' },
   // { id: 'fixtures', label: 'Fixtures' },
   { id: 'predictions', label: 'AI Prediction' },
   { id: 'squads', label: 'Squads' },
