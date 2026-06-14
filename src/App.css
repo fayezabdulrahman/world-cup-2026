@@ -244,6 +244,40 @@
   font-size: 0.78rem;
 }
 
+.result-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.result-details-cta {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.62rem 0.85rem;
+  border: 1px solid rgba(85, 231, 216, 0.3);
+  border-radius: 999px;
+  background: rgba(85, 231, 216, 0.1);
+  color: var(--text-main);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.result-details-cta:hover {
+  border-color: rgba(85, 231, 216, 0.58);
+  background: rgba(85, 231, 216, 0.16);
+}
+
+.result-details-cta span {
+  font-size: 1rem;
+  line-height: 1;
+}
+
 .result-pending {
   display: flex;
   min-height: 16rem;
@@ -2045,6 +2079,9 @@
   .compact-result .result-scoreline > div span {
     grid-column: 1 / -1;
     grid-row: 2;
+    justify-self: center;
+    width: 100%;
+    max-width: none;
     padding-top: 0.25rem;
     text-align: center;
   }
@@ -2194,6 +2231,19 @@
   .result-scoreline article,
   .result-scoreline article:last-child {
     justify-content: center;
+  }
+
+  .compact-result .section-head {
+    width: 100%;
+  }
+
+  .compact-result .result-header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .compact-result .result-meta {
+    text-align: center;
   }
 
   .prediction-hero,

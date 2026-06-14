@@ -24,7 +24,13 @@ function formatValue(value, stat) {
   return value
 }
 
-function RecentResultSection({ compact = false, match, stadium, teamMap }) {
+function RecentResultSection({
+  compact = false,
+  match,
+  onOpenResult,
+  stadium,
+  teamMap,
+}) {
   const [summary, setSummary] = useState(null)
 
   useEffect(() => {
@@ -91,9 +97,21 @@ function RecentResultSection({ compact = false, match, stadium, teamMap }) {
       <div className="section-head">
         <div>
           <p className="eyebrow">Latest result</p>
-          <h2>Full-time score</h2>
+          <h2>Final Score</h2>
         </div>
-        <span className="status-pill">Full-time</span>
+        <div className="result-header-actions">
+          <span className="status-pill">Full-time</span>
+          {compact && onOpenResult && (
+            <button
+              type="button"
+              className="result-details-cta"
+              onClick={() => onOpenResult(match)}
+            >
+              View match details
+              <span aria-hidden="true">→</span>
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="result-scoreline">
@@ -101,11 +119,11 @@ function RecentResultSection({ compact = false, match, stadium, teamMap }) {
           <img src={homeTeam?.flag || match.home_team_flag} alt="" />
           <strong className="truncate-name">{match.home_team_name_en}</strong>
         </article>
-        <div>
+        <div className="result-score">
           <strong>
             {match.home_score} – {match.away_score}
           </strong>
-          <span>
+          <span className="result-meta">
             Group {match.group} · {stadium?.fifa_name || match.stadium_name}
           </span>
         </div>

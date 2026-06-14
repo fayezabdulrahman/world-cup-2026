@@ -21,7 +21,7 @@ function FixturesSection({
       <div className="section-head">
         <div>
           <p className="eyebrow">Upcoming fixtures</p>
-          <h2>Choose a fixture and jump straight into the details.</h2>
+          <h2>Select a fixture to view details.</h2>
         </div>
         <p className="muted">Showing kickoff in your local timezone: {viewerTimeZone}.</p>
       </div>

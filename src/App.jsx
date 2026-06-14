@@ -241,6 +241,11 @@ function App() {
     })
   }
 
+  const handleOpenLatestResult = (fixture) => {
+    setSelectedCompletedMatchId(fixture.id)
+    window.location.hash = 'results'
+  }
+
   const teamMap = Object.fromEntries(
     dashboard.teams.map((team) => [String(team.id), team]),
   )
@@ -488,6 +493,7 @@ function App() {
         latestCompletedStadium={
           stadiumMap[String(latestCompletedMatch?.stadium_id)]
         }
+        onOpenLatestResult={handleOpenLatestResult}
         spotlightMatch={spotlightMatch}
         spotlightStadium={stadiumMap[String(spotlightMatch?.stadium_id)]}
         teamMap={teamMap}

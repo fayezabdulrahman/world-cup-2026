@@ -8,6 +8,7 @@ import SiteNav from './SiteNav'
 function HeroSection({
   latestCompletedMatch,
   latestCompletedStadium,
+  onOpenLatestResult,
   spotlightMatch,
   spotlightStadium,
   teamMap,
@@ -87,6 +88,7 @@ function HeroSection({
         <RecentResultSection
           compact
           match={latestCompletedMatch}
+          onOpenResult={onOpenLatestResult}
           stadium={latestCompletedStadium}
           teamMap={teamMap}
         />
