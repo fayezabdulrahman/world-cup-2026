@@ -463,6 +463,23 @@
   background: rgba(255, 255, 255, 0.08);
 }
 
+.hero-panel .scoreline img,
+.hero-grid .result-scoreline img,
+.dashboard .match-team img,
+.fixture-snapshot .team-badge img {
+  width: 3.5rem;
+  height: 2.5rem;
+  padding: 0.25rem;
+  border-radius: 10px;
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.hero-grid .compact-result .result-scoreline img {
+  width: 3.5rem;
+  height: 2.5rem;
+}
+
 .scoreline strong {
   font-family: var(--display-font);
   font-size: 2.2rem;
