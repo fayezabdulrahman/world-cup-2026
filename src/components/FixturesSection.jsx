@@ -75,9 +75,21 @@ function FixturesSection({
               </div>
             </div>
             <div className="match-center">
-              <span>{selectedMatch.type.toUpperCase()}</span>
+              <span>
+                {selectedMatch.group
+                  ? `Group ${selectedMatch.group}`
+                  : selectedMatch.type.replaceAll('-', ' ')}
+              </span>
               <strong>{formatViewerTime(selectedMatch.date)}</strong>
               <small>Host kickoff {selectedMatch.local_date}</small>
+              <small>
+                {selectedStadium?.fifa_name ||
+                  selectedMatch.stadium_name ||
+                  'Stadium TBD'}
+                {selectedStadium?.capacity
+                  ? ` · ${selectedStadium.capacity.toLocaleString()} seats`
+                  : ''}
+              </small>
             </div>
             <div className="match-team">
               <img

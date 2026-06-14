@@ -4,8 +4,14 @@ export default async function handler(req, res) {
   try {
     const payload = await getMergedGames()
 
-    res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate')
-    res.setHeader('Vercel-CDN-Cache-Control', 's-maxage=5, stale-if-error=300')
+    res.setHeader(
+      'Cache-Control',
+      'public, max-age=5, s-maxage=10, stale-while-revalidate=30, stale-if-error=3600',
+    )
+    res.setHeader(
+      'Vercel-CDN-Cache-Control',
+      's-maxage=10, stale-while-revalidate=30, stale-if-error=3600',
+    )
     res.status(200).json(payload)
   } catch (error) {
     console.error('Games request failed', {

@@ -2,11 +2,17 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { getMergedGames } from './server/games.js'
 
-function localGamesApi() {
+function localTournamentApi() {
   return {
-    name: 'local-games-api',
+    name: 'local-tournament-api',
     configureServer(server) {
-      server.middlewares.use('/api/worldcup/get/games', async (req, res) => {
+      server.middlewares.use('/api/worldcup/get', async (req, res, next) => {
+        const resource = req.url?.split('?')[0].split('/').filter(Boolean)[0]
+        if (!['games', 'groups', 'stadiums', 'teams'].includes(resource)) {
+          next()
+          return
+        }
+
         if (req.method !== 'GET') {
           res.statusCode = 405
           res.setHeader('Content-Type', 'application/json')
@@ -16,10 +22,17 @@ function localGamesApi() {
 
         try {
           const payload = await getMergedGames()
+          const responsePayload =
+            resource === 'games'
+              ? payload
+              : { [resource]: payload[resource], updatedAt: payload.updatedAt }
           res.statusCode = 200
-          res.setHeader('Cache-Control', 'no-store')
+          res.setHeader(
+            'Cache-Control',
+            resource === 'games' ? 'public, max-age=5' : 'public, max-age=3600',
+          )
           res.setHeader('Content-Type', 'application/json')
-          res.end(JSON.stringify(payload))
+          res.end(JSON.stringify(responsePayload))
         } catch (error) {
           console.error('Local games request failed', error)
           res.statusCode = 502
@@ -37,7 +50,7 @@ function localGamesApi() {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), localGamesApi()],
+  plugins: [react(), localTournamentApi()],
   server: {
     proxy: {
       '/api/worldcup': {

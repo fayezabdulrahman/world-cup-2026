@@ -190,13 +190,15 @@ export function formatCountDown(date) {
 
   if (diff <= 0) return 'Match in play'
 
-  const hours = Math.floor(diff / (1000 * 60 * 60))
-  const days = Math.floor(hours / 24)
-  const remainingHours = hours % 24
+  const totalMinutes = Math.max(1, Math.ceil(diff / (1000 * 60)))
+  const days = Math.floor(totalMinutes / (24 * 60))
+  const hours = Math.floor((totalMinutes % (24 * 60)) / 60)
+  const minutes = totalMinutes % 60
 
-  if (days === 0) return `${remainingHours}h to kickoff`
+  if (days > 0) return `${days}d ${hours}h to kickoff`
+  if (hours > 0) return `${hours}h ${minutes}m to kickoff`
 
-  return `${days}d ${remainingHours}h to kickoff`
+  return `${minutes}m to kickoff`
 }
 
 export function isMatchInPlay(match) {

@@ -1,7 +1,6 @@
 import { startTransition, useEffect, useRef, useState } from 'react'
 import { Analytics } from '@vercel/analytics/react'
 import fifaConfirmedSquads from './data/fifaConfirmedSquads.json'
-import fixtureSnapshot from './data/fixtureSnapshot'
 import teamPredictionProfiles from './data/teamPredictionProfiles.json'
 import './App.css'
 import FixturesSection from './components/FixturesSection'
@@ -31,25 +30,50 @@ function normalizeGames(games) {
   return games
     .map((game) => ({
       ...game,
-      date: parseMatchDate(
-        game.local_date,
-        getStadiumTimeZone(game.stadium_id),
-      ),
+      date: game.date
+        ? new Date(game.date)
+        : parseMatchDate(
+            game.local_date,
+            getStadiumTimeZone(game.stadium_id),
+          ),
     }))
+    .filter((game) => game.date && !Number.isNaN(game.date.getTime()))
     .sort((left, right) => left.date - right.date)
 }
 
+const DASHBOARD_CACHE_KEY = 'world-cup-2026-dashboard-v3'
+
+function readCachedDashboard() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(DASHBOARD_CACHE_KEY))
+    if (!cached?.games?.length || !cached?.teams?.length) return null
+
+    return {
+      groups: cached.groups || [],
+      games: normalizeGames(cached.games),
+      stadiums: cached.stadiums || [],
+      teams: cached.teams || [],
+    }
+  } catch {
+    return null
+  }
+}
+
 function App() {
-  const [dashboard, setDashboard] = useState({
-    groups: [],
-    games: normalizeGames(fixtureSnapshot),
-    stadiums: [],
-    teams: [],
-  })
-  const [loading, setLoading] = useState(true)
+  const [initialDashboard] = useState(readCachedDashboard)
+  const [dashboard, setDashboard] = useState(
+    initialDashboard || {
+      groups: [],
+      games: [],
+      stadiums: [],
+      teams: [],
+    },
+  )
+  const [loading, setLoading] = useState(!initialDashboard)
   const [error, setError] = useState('')
   const [dataWarning, setDataWarning] = useState('')
-  const hasDashboardData = useRef(true)
+  const hasDashboardData = useRef(Boolean(initialDashboard))
+  const [currentTime, setCurrentTime] = useState(() => Date.now())
   const [selectedMatchId, setSelectedMatchId] = useState('')
   const [selectedCompletedMatchId, setSelectedCompletedMatchId] = useState('')
   const [selectedTeamId, setSelectedTeamId] = useState('')
@@ -67,46 +91,32 @@ function App() {
     async function loadDashboard(isInitialLoad = false) {
       try {
         setError('')
-
-        const endpoints = [
-          ['teams', fetchJson(`${WORLD_CUP_BASE}/get/teams`)],
-          ['stadiums', fetchJson(`${WORLD_CUP_BASE}/get/stadiums`)],
-          ['groups', fetchJson(`${WORLD_CUP_BASE}/get/groups`)],
-        ]
-        const responses = await Promise.allSettled(
-          endpoints.map(([, request]) => request),
-        )
-
+        const payload = await fetchJson(`${WORLD_CUP_BASE}/get/games`, {
+          timeoutMs: 12000,
+        })
         if (!active) return
 
-        const successfulData = Object.fromEntries(
-          responses.flatMap((result, index) =>
-            result.status === 'fulfilled'
-              ? [[endpoints[index][0], result.value]]
-              : [],
-          ),
-        )
-        const failedEndpoints = responses.flatMap((result, index) =>
-          result.status === 'rejected' ? [endpoints[index][0]] : [],
-        )
-
-        if (responses.every((result) => result.status === 'rejected')) {
-          throw new Error('All dashboard feeds failed')
+        const nextDashboard = {
+          games: normalizeGames(payload.games || []),
+          teams: payload.teams || [],
+          stadiums: payload.stadiums || [],
+          groups: payload.groups || [],
+        }
+        if (!nextDashboard.games.length || !nextDashboard.teams.length) {
+          throw new Error('The tournament feed returned incomplete data')
         }
 
-        setDashboard((current) => ({
-          games: current.games,
-          teams: successfulData.teams?.teams || current.teams,
-          stadiums: successfulData.stadiums?.stadiums || current.stadiums,
-          groups: successfulData.groups?.groups || current.groups,
-        }))
-        hasDashboardData.current = true
-        setDataWarning(
-          failedEndpoints.length
-            ? `Some data could not be loaded (${failedEndpoints.join(', ')}). Refresh the page to try again.`
-            : '',
+        setDashboard(nextDashboard)
+        localStorage.setItem(
+          DASHBOARD_CACHE_KEY,
+          JSON.stringify({
+            ...nextDashboard,
+            games: payload.games,
+            updatedAt: payload.updatedAt,
+          }),
         )
-
+        hasDashboardData.current = true
+        setDataWarning('')
       } catch {
         if (!active) return
         if (hasDashboardData.current) {
@@ -126,7 +136,7 @@ function App() {
     async function refreshGames(keepPollingOnFailure = false) {
       try {
         const gamesResponse = await fetchJson(`${WORLD_CUP_BASE}/get/games`, {
-          timeoutMs: 60000,
+          timeoutMs: 12000,
         })
         if (!active) return
 
@@ -141,7 +151,14 @@ function App() {
         setDashboard((current) => ({
           ...current,
           games: normalizedGames.length ? normalizedGames : current.games,
+          groups: gamesResponse.groups || current.groups,
+          stadiums: gamesResponse.stadiums || current.stadiums,
+          teams: gamesResponse.teams || current.teams,
         }))
+        localStorage.setItem(
+          DASHBOARD_CACHE_KEY,
+          JSON.stringify(gamesResponse),
+        )
         setDataWarning('')
 
         if (nextMatch) {
@@ -173,8 +190,9 @@ function App() {
       }
     }
 
-    loadDashboard(true)
-    refreshGames()
+    loadDashboard(true).then(() => {
+      if (active) refreshGames()
+    })
 
     return () => {
       active = false
@@ -194,6 +212,14 @@ function App() {
 
     window.addEventListener('hashchange', handleHashChange)
     return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
+
+  useEffect(() => {
+    const clockTimer = window.setInterval(() => {
+      setCurrentTime(Date.now())
+    }, 30_000)
+
+    return () => window.clearInterval(clockTimer)
   }, [])
 
   const handleSelectMatch = (fixture) => {
@@ -225,9 +251,10 @@ function App() {
     fifaConfirmedSquads.squads.map((squad) => [squad.fifaCode, squad]),
   )
 
-  const upcomingFixtures = dashboard.games.filter(
-    (game) => String(game.finished).toLowerCase() !== 'true',
-  )
+  const upcomingFixtures = dashboard.games.filter((game) => {
+    if (String(game.finished).toLowerCase() === 'true') return false
+    return isMatchInPlay(game) || game.date.getTime() > currentTime
+  })
   const completedMatches = dashboard.games
     .filter((game) => String(game.finished).toLowerCase() === 'true')
     .sort((left, right) => right.date - left.date)
