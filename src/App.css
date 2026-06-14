@@ -466,7 +466,8 @@
 .hero-panel .scoreline img,
 .hero-grid .result-scoreline img,
 .dashboard .match-team img,
-.fixture-snapshot .team-badge img {
+.fixture-snapshot .team-badge img,
+.predictor-card .prediction-hero img {
   width: 3.5rem;
   height: 2.5rem;
   padding: 0.25rem;
@@ -478,6 +479,13 @@
 .hero-grid .compact-result .result-scoreline img {
   width: 3.5rem;
   height: 2.5rem;
+}
+
+.predictor-card .prediction-hero img {
+  width: 5rem;
+  height: 3.5rem;
+  padding: 0.35rem;
+  border-radius: 14px;
 }
 
 .scoreline strong {
@@ -1447,6 +1455,17 @@
   font-size: 0.86rem;
 }
 
+.prediction-table article > div {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.prediction-table article > div strong,
+.prediction-table article > div small {
+  display: block;
+}
+
 .prediction-table article b {
   display: grid;
   justify-items: end;
@@ -1463,6 +1482,7 @@
 .prediction-table small {
   color: var(--text-soft);
   font-size: 0.76rem;
+  line-height: 1.45;
 }
 
 .squad-card select {
