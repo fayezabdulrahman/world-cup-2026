@@ -31,9 +31,9 @@ export function getMatchMinute(status) {
 
 export function getReadableMatchStatus(match, status) {
   const statusLabels = {
-    STATUS_FIRST_HALF: '1st half',
+    STATUS_FIRST_HALF: '1st Half',
     STATUS_HALFTIME: 'Half-time',
-    STATUS_SECOND_HALF: '2nd half',
+    STATUS_SECOND_HALF: '2nd Half',
     STATUS_END_OF_REGULATION: 'Full-time',
     STATUS_FINAL: 'Full-time',
     STATUS_FULL_TIME: 'Full-time',

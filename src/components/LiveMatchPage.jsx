@@ -57,6 +57,48 @@ function normalizeStats(summary) {
   }))
 }
 
+function getTimelineEventLabel(event) {
+  const type = event.type?.type || ''
+  const text = `${event.text || ''} ${event.shortText || ''}`.toLowerCase()
+
+  if (type === 'start-delay' && text.includes('drinks break')) {
+    return 'Hydration break'
+  }
+  if (type === 'end-delay') return 'Play resumes'
+
+  return event.type?.text || 'Match update'
+}
+
+function normalizeTimeline(events) {
+  return (events || []).reduce((normalized, event) => {
+    const duplicateIndex = normalized.findIndex(
+      (candidate) =>
+        candidate.type?.type === event.type?.type &&
+        candidate.period?.number === event.period?.number &&
+        candidate.clock?.value === event.clock?.value &&
+        (!candidate.text || !event.text),
+    )
+
+    if (duplicateIndex === -1) {
+      normalized.push(event)
+      return normalized
+    }
+
+    const current = normalized[duplicateIndex]
+    const currentDetailScore =
+      Number(Boolean(current.text)) +
+      Number(Boolean(current.shortText)) +
+      (current.participants?.length || 0)
+    const eventDetailScore =
+      Number(Boolean(event.text)) +
+      Number(Boolean(event.shortText)) +
+      (event.participants?.length || 0)
+
+    if (eventDetailScore > currentDetailScore) normalized[duplicateIndex] = event
+    return normalized
+  }, [])
+}
+
 function getTimelineEmoji(event) {
   const eventType = event.type?.type || ''
   const eventText = `${event.type?.text || ''} ${event.shortText || ''}`.toLowerCase()
@@ -250,7 +292,7 @@ function LiveMatchPage({
         if (!active) return
         setLiveSummary(summary)
         setStats(normalizeStats(summary))
-        setTimeline(summary.keyEvents || [])
+        setTimeline(normalizeTimeline(summary.keyEvents))
         setLastUpdated(new Date())
         setFeedError(false)
 
@@ -517,19 +559,36 @@ function LiveMatchPage({
           </div>
           {timeline.length ? (
             <div className="timeline-list">
-              {[...timeline].reverse().map((event) => (
-                <article key={event.id} className="timeline-event">
-                  <strong>{event.clock?.displayValue || '–'}</strong>
-                  <span className="timeline-emoji" aria-hidden="true">
-                    {getTimelineEmoji(event)}
-                  </span>
-                  <div>
-                    <span>{event.type?.text}</span>
-                    <h3>{event.shortText || event.type?.text}</h3>
-                    <small>{event.text || event.team?.displayName}</small>
-                  </div>
-                </article>
-              ))}
+              {[...timeline].reverse().map((event) => {
+                const isGoal = event.type?.type === 'goal' || event.scoringPlay
+                const eventLabel = getTimelineEventLabel(event)
+
+                return (
+                  <article
+                    key={event.id}
+                    className={`timeline-event${isGoal ? ' goal' : ''}`}
+                  >
+                    <strong>{event.clock?.displayValue || '–'}</strong>
+                    <span className="timeline-emoji" aria-hidden="true">
+                      {getTimelineEmoji(event)}
+                    </span>
+                    <div>
+                      <div className="timeline-event-meta">
+                        {(event.shortText || isGoal) && <span>{eventLabel}</span>}
+                        {isGoal && event.team?.displayName && (
+                          <strong className="timeline-goal-team">
+                            {event.team.displayName}
+                          </strong>
+                        )}
+                      </div>
+                      <h3>{event.shortText || eventLabel}</h3>
+                      {(event.text || (!isGoal && event.team?.displayName)) && (
+                        <small>{event.text || event.team.displayName}</small>
+                      )}
+                    </div>
+                  </article>
+                )
+              })}
             </div>
           ) : (
             <p className="live-message">
