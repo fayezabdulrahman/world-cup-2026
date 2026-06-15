@@ -53,10 +53,12 @@ export const TEAM_FORMATIONS = {
 
 export const NAV_ITEMS = [
   { id: 'overview', label: 'Overview' },
+  { id: 'my-world-cup', label: 'My World Cup' },
   { id: 'live', label: 'Live Match' },
   { id: 'results', label: 'Past Fixtures' },
   // { id: 'fixtures', label: 'Fixtures' },
   { id: 'predictions', label: 'AI Prediction' },
+  { id: 'knockout', label: 'Knockout Map' },
   { id: 'squads', label: 'Squads' },
   // { id: 'groups', label: 'Groups' },
 ]

@@ -8,11 +8,14 @@ import GroupsSection from './components/GroupsSection'
 import HeroSection from './components/HeroSection'
 import LiveMatchPage from './components/LiveMatchPage'
 import LoadingState from './components/LoadingState'
+import KnockoutPage from './components/KnockoutPage'
+import MyWorldCupPage from './components/MyWorldCupPage'
 import PredictorSection from './components/PredictorSection'
 import SquadSection from './components/SquadSection'
 import SiteNav from './components/SiteNav'
 import TeamSnapshotCard from './components/TeamSnapshotCard'
 import { buildPredictionRows } from './lib/predictions'
+import { buildKnockoutProjection } from './lib/knockout'
 import { buildGroupStandings } from './lib/standings'
 import {
   buildSquadShape,
@@ -79,7 +82,14 @@ function App() {
   const [selectedTeamId, setSelectedTeamId] = useState('')
   const [page, setPage] = useState(() => {
     const hash = window.location.hash.slice(1)
-    return ['live', 'results', 'predictions', 'squads'].includes(hash)
+    return [
+      'live',
+      'results',
+      'predictions',
+      'knockout',
+      'squads',
+      'my-world-cup',
+    ].includes(hash)
       ? hash
       : 'dashboard'
   })
@@ -204,7 +214,14 @@ function App() {
     const handleHashChange = () => {
       const hash = window.location.hash.slice(1)
       setPage(
-        ['live', 'results', 'predictions', 'squads'].includes(hash)
+        [
+          'live',
+          'results',
+          'predictions',
+          'knockout',
+          'squads',
+          'my-world-cup',
+        ].includes(hash)
           ? hash
           : 'dashboard',
       )
@@ -312,6 +329,15 @@ function App() {
     ...row,
     group: row.team.groups,
   }))
+  const knockoutProjection = buildKnockoutProjection(
+    groupTableRows,
+    predictionRows,
+  )
+  const completedGroupMatches = dashboard.games.filter(
+    (game) =>
+      game.type === 'group' &&
+      String(game.finished).toLowerCase() === 'true',
+  ).length
 
   const championPick = predictionRows[0]
   const totalMatchesPlayed = predictionRows.reduce(
@@ -434,6 +460,35 @@ function App() {
           onSelectMatch={handleSelectCompletedMatch}
           stadium={stadiumMap[String(selectedCompletedMatch?.stadium_id)]}
           teamMap={teamMap}
+        />
+        <Analytics />
+      </div>
+    )
+  }
+
+  if (page === 'knockout') {
+    return (
+      <div className="page-shell">
+        <div className="ambient ambient-left" />
+        <div className="ambient ambient-right" />
+        <KnockoutPage
+          completedGroupMatches={completedGroupMatches}
+          projection={knockoutProjection}
+        />
+        <Analytics />
+      </div>
+    )
+  }
+
+  if (page === 'my-world-cup') {
+    return (
+      <div className="page-shell">
+        <div className="ambient ambient-left" />
+        <div className="ambient ambient-right" />
+        <MyWorldCupPage
+          games={dashboard.games}
+          stadiumMap={stadiumMap}
+          teams={dashboard.teams}
         />
         <Analytics />
       </div>
