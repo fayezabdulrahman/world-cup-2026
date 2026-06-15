@@ -3122,7 +3122,8 @@
   }
 
   .hero-panel,
-  .detail-page {
+  .detail-page,
+  .live-page {
     padding-top: 5.8rem;
   }
 

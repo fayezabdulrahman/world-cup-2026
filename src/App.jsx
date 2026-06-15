@@ -239,6 +239,14 @@ function App() {
     return () => window.clearInterval(clockTimer)
   }, [])
 
+  if (loading) {
+    return <LoadingState />
+  }
+
+  if (error) {
+    return <LoadingState error={error} />
+  }
+
   const handleSelectMatch = (fixture) => {
     startTransition(() => {
       setSelectedMatchId(fixture.id)
@@ -413,14 +421,6 @@ function App() {
         }),
       ]
     : []
-
-  if (loading) {
-    return <LoadingState />
-  }
-
-  if (error) {
-    return <LoadingState error={error} />
-  }
 
   if (page === 'live') {
     return (
