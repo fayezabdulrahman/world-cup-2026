@@ -1300,7 +1300,7 @@
 .live-page {
   position: relative;
   z-index: 1;
-  max-width: 1040px;
+  max-width: 1280px;
   margin: 0 auto;
   padding: 2rem 1.25rem 4rem;
 }
@@ -1363,40 +1363,123 @@
   margin: 0;
 }
 
-.past-fixture-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
+.past-fixtures-card {
+  padding: 1rem;
 }
 
-.past-fixture-list button {
-  display: grid;
-  gap: 0.35rem;
-  min-width: 0;
-  padding: 1rem;
+.compact-past-fixture-list {
+  max-height: 23rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-color: rgba(85, 231, 216, 0.5) rgba(255, 255, 255, 0.04);
+  scrollbar-width: thin;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.035);
+  background: rgba(0, 0, 0, 0.12);
+  overscroll-behavior: contain;
+}
+
+.compact-past-fixture-list:focus-visible {
+  outline: 2px solid rgba(85, 231, 216, 0.65);
+  outline-offset: 3px;
+}
+
+.compact-past-fixture-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.compact-past-fixture-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.compact-past-fixture-list::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgba(85, 231, 216, 0.5);
+  background-clip: padding-box;
+}
+
+.compact-past-fixture-list > button {
+  display: grid;
+  grid-template-columns: minmax(105px, 0.55fr) minmax(240px, 1.5fr) minmax(90px, auto);
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  min-height: 3.8rem;
+  padding: 0.55rem 0.8rem;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: transparent;
   color: var(--text-main);
   text-align: left;
   cursor: pointer;
+  transition: background 160ms ease, box-shadow 160ms ease;
 }
 
-.past-fixture-list button:hover,
-.past-fixture-list button.active {
-  border-color: rgba(85, 231, 216, 0.48);
+.compact-past-fixture-list > button:last-child {
+  border-bottom: 0;
+}
+
+.compact-past-fixture-list > button:hover,
+.compact-past-fixture-list > button.active {
   background: rgba(85, 231, 216, 0.08);
 }
 
-.past-fixture-list span {
-  color: var(--text-muted);
-  font-size: 0.76rem;
+.compact-past-fixture-list > button.active {
+  box-shadow: inset 3px 0 #55e7d8;
 }
 
-.past-fixture-list strong {
+.compact-past-date,
+.compact-past-score {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.compact-past-date strong {
+  font-size: 0.78rem;
+}
+
+.compact-past-date small,
+.compact-past-score small {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}
+
+.compact-past-teams {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.compact-past-teams > span {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.compact-past-teams img {
+  flex: 0 0 auto;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.compact-past-teams strong {
   overflow: hidden;
+  font-size: 0.78rem;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.compact-past-score {
+  justify-items: end;
+  text-align: right;
+}
+
+.compact-past-score strong {
+  font-size: 1rem;
 }
 
 .status-pill {
@@ -1929,6 +2012,226 @@
 .predictor-card .section-head h2 {
   font-size: clamp(1.2rem, 1.5vw, 1.45rem);
   line-height: 1;
+}
+
+.fixture-view-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.65rem;
+}
+
+.fixture-view-controls .muted {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.compact-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--text-main);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.compact-view-toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.compact-view-toggle > span {
+  position: relative;
+  width: 2.35rem;
+  height: 1.3rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  transition: 180ms ease;
+}
+
+.compact-view-toggle > span::after {
+  content: '';
+  position: absolute;
+  top: 0.18rem;
+  left: 0.2rem;
+  width: 0.82rem;
+  height: 0.82rem;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: 180ms ease;
+}
+
+.compact-view-toggle input:checked + span {
+  border-color: rgba(85, 231, 216, 0.65);
+  background: rgba(85, 231, 216, 0.2);
+}
+
+.compact-view-toggle input:checked + span::after {
+  transform: translateX(1rem);
+  background: #68eda3;
+}
+
+.compact-view-toggle input:focus-visible + span {
+  outline: 2px solid rgba(255, 181, 112, 0.9);
+  outline-offset: 3px;
+}
+
+.compact-matchday-board {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.compact-fixture-group {
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.compact-fixture-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 2.35rem;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  color: var(--text-main);
+  font-size: 0.78rem;
+}
+
+.compact-fixture-heading > div {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.compact-fixture-heading > span {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.compact-fixture-list {
+  display: grid;
+}
+
+.compact-fixture-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(105px, 0.8fr) minmax(90px, 0.7fr) minmax(90px, auto);
+  align-items: center;
+  gap: 0.8rem;
+  min-height: 3.6rem;
+  padding: 0.55rem 0.75rem;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: transparent;
+  color: var(--text-main);
+  text-align: left;
+  cursor: pointer;
+  transition: background 160ms ease, box-shadow 160ms ease;
+}
+
+.compact-fixture-row:last-child {
+  border-bottom: 0;
+}
+
+.compact-fixture-row:hover,
+.compact-fixture-row.active {
+  background: rgba(85, 231, 216, 0.08);
+}
+
+.compact-fixture-row.active {
+  box-shadow: inset 3px 0 #55e7d8;
+}
+
+.compact-fixture-row.live {
+  background: rgba(67, 224, 141, 0.08);
+}
+
+.compact-fixture-row.favorite {
+  background:
+    linear-gradient(90deg, rgba(255, 181, 112, 0.13), transparent 55%),
+    rgba(255, 255, 255, 0.015);
+  box-shadow: inset 3px 0 #ffb570;
+}
+
+.compact-fixture-row.favorite.active {
+  box-shadow: inset 3px 0 #ffb570, inset 0 0 0 1px rgba(85, 231, 216, 0.25);
+}
+
+.compact-fixture-teams {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.compact-fixture-teams > span {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.compact-fixture-teams img {
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.compact-fixture-teams strong,
+.compact-fixture-status strong {
+  font-size: 0.8rem;
+}
+
+.compact-fixture-context,
+.compact-fixture-status {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.compact-fixture-context strong {
+  font-size: 0.72rem;
+  text-transform: capitalize;
+}
+
+.compact-fixture-context small,
+.compact-fixture-status small {
+  color: var(--text-muted);
+  font-size: 0.66rem;
+}
+
+.compact-fixture-status {
+  justify-items: end;
+  text-align: right;
+}
+
+.compact-fixture-row.live .compact-fixture-status strong,
+.compact-fixture-row.live .compact-fixture-status small {
+  color: #68eda3;
+}
+
+.compact-favorite-mark {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.45rem;
+  color: #ffb570;
+  font-size: 0.58rem;
+}
+
+.compact-empty,
+.compact-favorite-hint {
+  margin: 0;
+  padding: 0.8rem;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.compact-favorite-hint {
+  padding: 0 0.2rem;
+  text-align: center;
 }
 
 .spotlight-card .live-match-cta {
@@ -2825,15 +3128,25 @@
 
   .site-nav {
     position: fixed;
-    top: 0.65rem;
-    right: 0.65rem;
-    left: 0.65rem;
+    top: 0.75rem;
+    right: 0.75rem;
+    left: 0.75rem;
     z-index: 100;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 0.75rem;
     margin: 0;
-    padding: 0.7rem 0.75rem 0.7rem 0.9rem;
-    border-radius: 18px;
+    padding: 0.65rem 0.7rem 0.65rem 0.9rem;
+    border-radius: 16px;
+    background: rgba(7, 17, 38, 0.96);
+    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.28);
+    transition:
+      border-radius 180ms ease,
+      background 180ms ease;
+  }
+
+  .site-nav.menu-open {
+    border-radius: 16px 16px 0 0;
+    background: #091329;
   }
 
   .site-brand {
@@ -2857,11 +3170,11 @@
     display: grid;
     place-content: center;
     gap: 4px;
-    width: 2.75rem;
-    height: 2.75rem;
+    width: 2.5rem;
+    height: 2.5rem;
     padding: 0;
     border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 13px;
+    border-radius: 11px;
     background: rgba(10, 21, 52, 0.82);
     color: var(--text-main);
     cursor: pointer;
@@ -2892,18 +3205,22 @@
 
   .jump-nav {
     position: absolute;
-    top: calc(100% + 0.5rem);
-    right: 0;
-    left: 0;
+    top: calc(100% - 1px);
+    right: -1px;
+    left: -1px;
     display: grid;
-    gap: 0.45rem;
+    justify-content: stretch;
+    gap: 0.3rem;
     max-height: calc(100vh - 6rem);
-    padding: 0.65rem;
+    padding: 0.5rem;
     overflow-y: auto;
     border: 1px solid var(--card-border);
-    border-radius: 18px;
-    background: rgba(7, 17, 38, 0.97);
-    box-shadow: var(--card-shadow);
+    border-top: 0;
+    border-radius: 0 0 16px 16px;
+    background: #091329;
+    box-shadow:
+      0 22px 38px rgba(0, 0, 0, 0.42),
+      0 100vh 0 100vh rgba(3, 8, 21, 0.62);
     opacity: 0;
     visibility: hidden;
     transform: translateY(-0.5rem);
@@ -2921,9 +3238,21 @@
 
   .jump-nav a {
     width: 100%;
-    padding: 0.8rem 0.9rem;
-    border-radius: 12px;
-    font-size: 0.88rem;
+    padding: 0.72rem 0.8rem;
+    border-color: transparent;
+    border-radius: 10px;
+    background: transparent;
+    font-size: 0.86rem;
+  }
+
+  .jump-nav a:hover {
+    transform: none;
+    background: rgba(255, 255, 255, 0.055);
+  }
+
+  .jump-nav a.active {
+    border-color: rgba(85, 231, 216, 0.28);
+    background: rgba(85, 231, 216, 0.1);
   }
 
   .hero-grid {
@@ -3134,6 +3463,43 @@
     gap: 0.55rem;
   }
 
+  .spotlight-card .section-head {
+    align-items: flex-start;
+  }
+
+  .fixture-view-controls {
+    align-items: flex-start;
+  }
+
+  .compact-matchday {
+    padding: 0.85rem;
+  }
+
+  .compact-matchday .section-head {
+    margin-bottom: 0.8rem;
+  }
+
+  .compact-fixture-row {
+    grid-template-columns: minmax(88px, 0.8fr) minmax(76px, 0.65fr) minmax(78px, auto);
+    gap: 0.45rem;
+    min-height: 3.35rem;
+    padding: 0.48rem 0.55rem;
+  }
+
+  .compact-fixture-context small {
+    display: none;
+  }
+
+  .compact-fixture-teams strong,
+  .compact-fixture-status strong {
+    font-size: 0.74rem;
+  }
+
+  .compact-favorite-mark {
+    top: 0.28rem;
+    right: 0.3rem;
+  }
+
   .fixture-chip {
     min-width: 0;
     padding: 0.75rem;
@@ -3161,8 +3527,36 @@
     padding-inline: 0.9rem;
   }
 
-  .past-fixture-list {
-    grid-template-columns: 1fr;
+  .past-fixtures-card {
+    padding: 0.85rem;
+  }
+
+  .past-fixtures-card .live-panel-head {
+    align-items: flex-start;
+  }
+
+  .compact-past-fixture-list {
+    max-height: 18rem;
+  }
+
+  .compact-past-fixture-list > button {
+    grid-template-columns: minmax(72px, 0.5fr) minmax(125px, 1.25fr) minmax(62px, auto);
+    gap: 0.5rem;
+    min-height: 3.55rem;
+    padding: 0.48rem 0.55rem;
+  }
+
+  .compact-past-date strong,
+  .compact-past-teams strong {
+    font-size: 0.7rem;
+  }
+
+  .compact-past-date small {
+    display: none;
+  }
+
+  .compact-past-score strong {
+    font-size: 0.86rem;
   }
 
   .my-world-cup-hero {

@@ -16,6 +16,16 @@ import SiteNav from './SiteNav'
 const ESPN_BASE = '/api/espn'
 const REFRESH_INTERVAL = 5000
 
+function formatResultDate(date) {
+  if (!date) return 'Date TBD'
+
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  }).format(date)
+}
+
 const DISPLAY_STATS = [
   { name: 'totalShots', label: 'Shots' },
   { name: 'shotsOnTarget', label: 'Shots on target' },
@@ -71,6 +81,12 @@ function getTimelineEventLabel(event) {
 
 function normalizeTimeline(events) {
   return (events || []).reduce((normalized, event) => {
+    const eventType = event.type?.type
+    const isDelayBoundary =
+      eventType === 'start-delay' || eventType === 'end-delay'
+
+    if (isDelayBoundary && !event.text?.trim()) return normalized
+
     const duplicateIndex = normalized.findIndex(
       (candidate) =>
         candidate.type?.type === event.type?.type &&
@@ -409,7 +425,7 @@ function LiveMatchPage({
         <div className="live-refresh">
           <span className={isLive ? 'live-dot' : 'live-dot idle'} />
           {isLive
-            ? 'Updating every 5 seconds'
+            ? 'Live Updates'
             : historical
               ? 'Completed match'
               : 'Match centre'}
@@ -426,23 +442,54 @@ function LiveMatchPage({
             </div>
             <span>{matchOptions.length} results</span>
           </div>
-          <div className="past-fixture-list">
-            {matchOptions.map((fixture) => (
-              <button
-                key={fixture.id}
-                type="button"
-                className={fixture.id === match.id ? 'active' : ''}
-                onClick={() => onSelectMatch?.(fixture)}
-              >
-                <span>
-                  Group {fixture.group} · {formatViewerTime(fixture.date)}
-                </span>
-                <strong>
-                  {fixture.home_team_name_en} {fixture.home_score}–{fixture.away_score}{' '}
-                  {fixture.away_team_name_en}
-                </strong>
-              </button>
-            ))}
+          <div
+            className="compact-past-fixture-list"
+            role="region"
+            aria-label="Completed match results"
+            tabIndex="0"
+          >
+            {matchOptions.map((fixture) => {
+              const fixtureHome = teamMap[String(fixture.home_team_id)]
+              const fixtureAway = teamMap[String(fixture.away_team_id)]
+
+              return (
+                <button
+                  key={fixture.id}
+                  type="button"
+                  className={fixture.id === match.id ? 'active' : ''}
+                  onClick={() => onSelectMatch?.(fixture)}
+                >
+                  <span className="compact-past-date">
+                    <strong>{formatResultDate(fixture.date)}</strong>
+                    <small>Matchday {fixture.matchday || 'TBD'}</small>
+                  </span>
+                  <span className="compact-past-teams">
+                    <span>
+                      <img
+                        src={fixtureHome?.flag || fixture.home_team_flag}
+                        alt=""
+                        loading="lazy"
+                      />
+                      <strong>{fixture.home_team_name_en}</strong>
+                    </span>
+                    <span>
+                      <img
+                        src={fixtureAway?.flag || fixture.away_team_flag}
+                        alt=""
+                        loading="lazy"
+                      />
+                      <strong>{fixture.away_team_name_en}</strong>
+                    </span>
+                  </span>
+                  <span className="compact-past-score">
+                    <strong>
+                      {fixture.home_score} – {fixture.away_score}
+                    </strong>
+                    <small>Group {fixture.group}</small>
+                  </span>
+                </button>
+              )
+            })}
           </div>
         </section>
       )}
