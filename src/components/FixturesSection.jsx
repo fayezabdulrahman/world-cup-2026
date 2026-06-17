@@ -46,9 +46,19 @@ function formatCompactKickoff(date) {
   }).format(date)
 }
 
+function getCompactLiveMeta(fixture) {
+  const elapsed = String(fixture.time_elapsed || '').trim().toLowerCase()
+  const minutes = Number.parseInt(elapsed, 10)
+
+  return Number.isFinite(minutes) && minutes > 0
+    ? `${minutes}' · Live`
+    : 'Live now'
+}
+
 function CompactFixtureRow({
   favoriteIdSet,
   fixture,
+  hideSpoilers,
   isActive,
   onSelectMatch,
   teamMap,
@@ -59,13 +69,15 @@ function CompactFixtureRow({
   const isFavorite =
     favoriteIdSet.has(String(fixture.home_team_id)) ||
     favoriteIdSet.has(String(fixture.away_team_id))
-  const status = isLive
+  const status = isLive && hideSpoilers
+    ? 'Hidden'
+    : isLive
     ? `${fixture.home_score ?? 0} – ${fixture.away_score ?? 0}`
     : formatCompactKickoff(fixture.date)
-  const meta = isLive
-    ? fixture.time_elapsed && String(fixture.time_elapsed).toLowerCase() !== 'live'
-      ? `${fixture.time_elapsed}' · Live`
-      : 'Live now'
+  const meta = isLive && hideSpoilers
+    ? 'Spoiler-free'
+    : isLive
+    ? getCompactLiveMeta(fixture)
     : formatCountDown(fixture.date)
 
   return (
@@ -104,6 +116,7 @@ function CompactFixtureRow({
 }
 
 function FixturesSection({
+  hideSpoilers = false,
   upcomingFixtures,
   selectedMatch,
   selectedStadium,
@@ -186,6 +199,7 @@ function FixturesSection({
                     key={fixture.id}
                     favoriteIdSet={favoriteIdSet}
                     fixture={fixture}
+                    hideSpoilers={hideSpoilers}
                     isActive={fixture.id === selectedMatch?.id}
                     onSelectMatch={onSelectMatch}
                     teamMap={teamMap}
@@ -209,6 +223,7 @@ function FixturesSection({
                     key={fixture.id}
                     favoriteIdSet={favoriteIdSet}
                     fixture={fixture}
+                    hideSpoilers={hideSpoilers}
                     isActive={fixture.id === selectedMatch?.id}
                     onSelectMatch={onSelectMatch}
                     teamMap={teamMap}

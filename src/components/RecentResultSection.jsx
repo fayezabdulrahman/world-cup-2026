@@ -24,8 +24,70 @@ function formatValue(value, stat) {
   return value
 }
 
+function getGoalScorerName(event) {
+  const participant = event.participants?.find(
+    (entry) =>
+      entry.type === 'athlete' ||
+      entry.athlete?.displayName ||
+      entry.displayName,
+  )
+  const athlete = event.athletes?.[0] || participant?.athlete
+  const name =
+    athlete?.displayName ||
+    athlete?.shortName ||
+    participant?.displayName ||
+    participant?.athlete?.displayName
+
+  if (name) return name
+
+  const text = event.shortText || event.text || ''
+  return text.split(/goal/i)[0].replace(/^\s*\d+'\s*/, '').trim() || 'Goal'
+}
+
+function getGoalMinute(event) {
+  const displayValue = event.clock?.displayValue || event.displayTime
+  if (displayValue) return displayValue
+
+  if (Number.isFinite(event.clock?.value)) {
+    return `${Math.ceil(event.clock.value)}'`
+  }
+
+  return '–'
+}
+
+function getTeamSide(event, match) {
+  const teamId = String(event.team?.id || event.teamId || '')
+  const teamName = String(event.team?.displayName || event.team?.name || '')
+    .toLowerCase()
+
+  if (teamId && teamId === String(match.home_team_id)) return 'home'
+  if (teamId && teamId === String(match.away_team_id)) return 'away'
+  if (teamName && teamName === match.home_team_name_en.toLowerCase()) return 'home'
+  if (teamName && teamName === match.away_team_name_en.toLowerCase()) return 'away'
+
+  return undefined
+}
+
+function getGoalScorers(summary, match) {
+  return (summary?.keyEvents || [])
+    .filter((event) => event.type?.type === 'goal' || event.scoringPlay)
+    .map((event) => ({
+      id: event.id || `${event.clock?.value}-${event.shortText}`,
+      minute: getGoalMinute(event),
+      name: getGoalScorerName(event),
+      side: getTeamSide(event, match),
+    }))
+    .filter((goal) => goal.side)
+    .sort((left, right) => {
+      const leftMinute = Number.parseFloat(left.minute)
+      const rightMinute = Number.parseFloat(right.minute)
+      return (leftMinute || 0) - (rightMinute || 0)
+    })
+}
+
 function RecentResultSection({
   compact = false,
+  hideSpoilers = false,
   match,
   onOpenResult,
   stadium,
@@ -89,6 +151,9 @@ function RecentResultSection({
   const awayStats = getTeamStats(
     summary?.boxscore?.teams?.find((team) => team.homeAway === 'away'),
   )
+  const goalScorers = hideSpoilers ? [] : getGoalScorers(summary, match)
+  const homeScorers = goalScorers.filter((goal) => goal.side === 'home')
+  const awayScorers = goalScorers.filter((goal) => goal.side === 'away')
 
   return (
     <section
@@ -97,10 +162,12 @@ function RecentResultSection({
       <div className="section-head">
         <div>
           <p className="eyebrow">Latest result</p>
-          <h2>Final Score</h2>
+          <h2>{hideSpoilers ? 'Result hidden' : 'Final Score'}</h2>
         </div>
         <div className="result-header-actions">
-          <span className="status-pill">Full-time</span>
+          <span className="status-pill">
+            {hideSpoilers ? 'Spoiler-free' : 'Full-time'}
+          </span>
           {compact && onOpenResult && (
             <button
               type="button"
@@ -121,10 +188,12 @@ function RecentResultSection({
         </article>
         <div className="result-score">
           <strong>
-            {match.home_score} – {match.away_score}
+            {hideSpoilers ? 'Hidden' : `${match.home_score} – ${match.away_score}`}
           </strong>
           <span className="result-meta">
-            Group {match.group} · {stadium?.fifa_name || match.stadium_name}
+            {hideSpoilers
+              ? 'Score hidden until you turn spoiler-free mode off'
+              : `Group ${match.group} · ${stadium?.fifa_name || match.stadium_name}`}
           </span>
         </div>
         <article>
@@ -133,7 +202,40 @@ function RecentResultSection({
         </article>
       </div>
 
-      {!compact && summary?.boxscore?.teams?.length ? (
+      {compact && !hideSpoilers && goalScorers.length ? (
+        <div className="compact-goal-scorers" aria-label="Goal scorers">
+          <div>
+            <span>{match.home_team_name_en}</span>
+            {homeScorers.length ? (
+              homeScorers.map((goal) => (
+                <p key={goal.id}>
+                  <strong>{goal.name}</strong>
+                  <small>{goal.minute}</small>
+                </p>
+              ))
+            ) : (
+              <p className="no-goals">No goals</p>
+            )}
+          </div>
+          <div>
+            <span>{match.away_team_name_en}</span>
+            {awayScorers.length ? (
+              awayScorers.map((goal) => (
+                <p key={goal.id}>
+                  <strong>{goal.name}</strong>
+                  <small>{goal.minute}</small>
+                </p>
+              ))
+            ) : (
+              <p className="no-goals">No goals</p>
+            )}
+          </div>
+        </div>
+      ) : null}
+
+      {!compact && hideSpoilers ? (
+        <p className="muted">Final statistics are hidden in spoiler-free mode.</p>
+      ) : !compact && summary?.boxscore?.teams?.length ? (
         <div className="result-stats">
           {SUMMARY_STATS.map((stat) => (
             <article key={stat.name}>

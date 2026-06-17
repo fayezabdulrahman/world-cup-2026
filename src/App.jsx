@@ -10,12 +10,14 @@ import LiveMatchPage from './components/LiveMatchPage'
 import LoadingState from './components/LoadingState'
 import KnockoutPage from './components/KnockoutPage'
 import MyWorldCupPage from './components/MyWorldCupPage'
+import PlayerWatchlistPage from './components/PlayerWatchlistPage'
 import PredictorSection from './components/PredictorSection'
 import SquadSection from './components/SquadSection'
 import SiteNav from './components/SiteNav'
 import TeamSnapshotCard from './components/TeamSnapshotCard'
 import { buildPredictionRows } from './lib/predictions'
 import { buildKnockoutProjection } from './lib/knockout'
+import { buildMatchImplications } from './lib/qualification'
 import { buildGroupStandings } from './lib/standings'
 import {
   buildSquadShape,
@@ -45,6 +47,15 @@ function normalizeGames(games) {
 }
 
 const DASHBOARD_CACHE_KEY = 'world-cup-2026-dashboard-v3'
+const SPOILER_FREE_KEY = 'world-cup-2026-spoiler-free-v1'
+
+function readSpoilerFreePreference() {
+  try {
+    return localStorage.getItem(SPOILER_FREE_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
 
 function readCachedDashboard() {
   try {
@@ -75,6 +86,7 @@ function App() {
   const [loading, setLoading] = useState(!initialDashboard)
   const [error, setError] = useState('')
   const [dataWarning, setDataWarning] = useState('')
+  const [hideSpoilers, setHideSpoilers] = useState(readSpoilerFreePreference)
   const hasDashboardData = useRef(Boolean(initialDashboard))
   const [currentTime, setCurrentTime] = useState(() => Date.now())
   const [selectedMatchId, setSelectedMatchId] = useState('')
@@ -87,6 +99,7 @@ function App() {
       'results',
       'predictions',
       'knockout',
+      'players',
       'squads',
       'my-world-cup',
     ].includes(hash)
@@ -219,6 +232,7 @@ function App() {
           'results',
           'predictions',
           'knockout',
+          'players',
           'squads',
           'my-world-cup',
         ].includes(hash)
@@ -238,6 +252,14 @@ function App() {
 
     return () => window.clearInterval(clockTimer)
   }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(SPOILER_FREE_KEY, String(hideSpoilers))
+    } catch {
+      // Preference persistence is optional when storage is unavailable.
+    }
+  }, [hideSpoilers])
 
   if (loading) {
     return <LoadingState />
@@ -325,6 +347,24 @@ function App() {
 
   const groupTableRows = buildGroupStandings(
     dashboard.groups,
+    dashboard.games,
+    teamMap,
+  )
+  const spotlightImplications = buildMatchImplications(
+    spotlightMatch,
+    groupTableRows,
+    dashboard.games,
+    teamMap,
+  )
+  const activeLiveImplications = buildMatchImplications(
+    activeLiveMatch,
+    groupTableRows,
+    dashboard.games,
+    teamMap,
+  )
+  const selectedCompletedImplications = buildMatchImplications(
+    selectedCompletedMatch,
+    groupTableRows,
     dashboard.games,
     teamMap,
   )
@@ -430,10 +470,13 @@ function App() {
         <LiveMatchPage
           key={activeLiveMatch?.id || 'live-empty'}
           groups={groupTableRows}
+          hideSpoilers={hideSpoilers}
+          implications={activeLiveImplications}
           match={activeLiveMatch}
           onBack={() => {
             window.location.hash = ''
           }}
+          onToggleSpoilers={setHideSpoilers}
           stadium={stadiumMap[String(activeLiveMatch?.stadium_id)]}
           teamMap={teamMap}
         />
@@ -451,6 +494,8 @@ function App() {
           activePage="results"
           groups={groupTableRows}
           historical
+          hideSpoilers={hideSpoilers}
+          implications={selectedCompletedImplications}
           key={selectedCompletedMatch?.id || 'results-empty'}
           match={selectedCompletedMatch}
           matchOptions={completedMatches}
@@ -458,6 +503,7 @@ function App() {
             window.location.hash = ''
           }}
           onSelectMatch={handleSelectCompletedMatch}
+          onToggleSpoilers={setHideSpoilers}
           stadium={stadiumMap[String(selectedCompletedMatch?.stadium_id)]}
           teamMap={teamMap}
         />
@@ -488,6 +534,21 @@ function App() {
         <MyWorldCupPage
           games={dashboard.games}
           stadiumMap={stadiumMap}
+          teams={dashboard.teams}
+        />
+        <Analytics />
+      </div>
+    )
+  }
+
+  if (page === 'players') {
+    return (
+      <div className="page-shell">
+        <div className="ambient ambient-left" />
+        <div className="ambient ambient-right" />
+        <PlayerWatchlistPage
+          games={dashboard.games}
+          squads={fifaConfirmedSquads.squads}
           teams={dashboard.teams}
         />
         <Analytics />
@@ -548,16 +609,34 @@ function App() {
         latestCompletedStadium={
           stadiumMap[String(latestCompletedMatch?.stadium_id)]
         }
+        hideSpoilers={hideSpoilers}
         onOpenLatestResult={handleOpenLatestResult}
+        spotlightImplications={spotlightImplications}
         spotlightMatch={spotlightMatch}
         spotlightStadium={stadiumMap[String(spotlightMatch?.stadium_id)]}
         teamMap={teamMap}
       />
 
       <main className="dashboard">
+        <section className="spoiler-mode-panel" aria-label="Spoiler-free mode">
+          <div>
+            <strong>Spoiler-free mode</strong>
+            <span>Hide live scores and results while you browse fixtures.</span>
+          </div>
+          <label className="spoiler-mode-toggle">
+            <input
+              type="checkbox"
+              checked={hideSpoilers}
+              onChange={(event) => setHideSpoilers(event.target.checked)}
+            />
+            <span aria-hidden="true" />
+            {hideSpoilers ? 'On' : 'Off'}
+          </label>
+        </section>
         {dataWarning && <p className="data-warning">{dataWarning}</p>}
         <section className="feature-grid">
           <FixturesSection
+            hideSpoilers={hideSpoilers}
             upcomingFixtures={upcomingFixtures}
             selectedMatch={selectedMatch}
             selectedStadium={selectedStadium}

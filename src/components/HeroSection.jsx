@@ -2,13 +2,16 @@ import {
   formatCountDown,
   isMatchInPlay,
 } from '../lib/worldCup'
+import MatchImplicationsCard from './MatchImplicationsCard'
 import RecentResultSection from './RecentResultSection'
 import SiteNav from './SiteNav'
 
 function HeroSection({
+  hideSpoilers = false,
   latestCompletedMatch,
   latestCompletedStadium,
   onOpenLatestResult,
+  spotlightImplications,
   spotlightMatch,
   spotlightStadium,
   teamMap,
@@ -46,9 +49,11 @@ function HeroSection({
               </span>
             </div>
             <strong>
-              {isLive
-                ? `${spotlightMatch?.home_score} – ${spotlightMatch?.away_score}`
-                : 'vs'}
+              {isLive && hideSpoilers
+                ? 'Hidden'
+                : isLive
+                  ? `${spotlightMatch?.home_score} – ${spotlightMatch?.away_score}`
+                  : 'vs'}
             </strong>
             <div>
               <img
@@ -76,18 +81,22 @@ function HeroSection({
             </p>
           )}
 
-          <p className="hero-meta">
-            Group {spotlightMatch?.group} · Group matchday{' '}
-            {spotlightMatch?.matchday} ·{' '}
-            {spotlightStadium?.fifa_name ||
-              spotlightStadium?.name_en ||
-              spotlightMatch?.stadium_name}
-          </p>
+          <div className="hero-foot">
+            <p className="hero-meta">
+              Group {spotlightMatch?.group} · Group matchday{' '}
+              {spotlightMatch?.matchday} ·{' '}
+              {spotlightStadium?.fifa_name ||
+                spotlightStadium?.name_en ||
+                spotlightMatch?.stadium_name}
+            </p>
+            <MatchImplicationsCard compact implications={spotlightImplications} />
+          </div>
         </section>
 
         <RecentResultSection
           compact
           match={latestCompletedMatch}
+          hideSpoilers={hideSpoilers}
           onOpenResult={onOpenLatestResult}
           stadium={latestCompletedStadium}
           teamMap={teamMap}

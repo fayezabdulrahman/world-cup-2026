@@ -11,6 +11,7 @@ import {
   numberValue,
 } from '../lib/worldCup'
 import { findMatchEvent, getScoreboardDateRange } from '../lib/espn'
+import MatchImplicationsCard from './MatchImplicationsCard'
 import SiteNav from './SiteNav'
 
 const ESPN_BASE = '/api/espn'
@@ -256,10 +257,13 @@ function LiveMatchPage({
   activePage = 'live',
   groups,
   historical = false,
+  hideSpoilers = false,
+  implications,
   match,
   matchOptions = [],
   onBack,
   onSelectMatch,
+  onToggleSpoilers,
   stadium,
   teamMap,
 }) {
@@ -359,8 +363,15 @@ function LiveMatchPage({
   )
   const matchGroup = groups.find((group) => group.name === match?.group)
   const liveStandings = useMemo(
-    () => buildLiveStandings(matchGroup, effectiveMatch, teamMap),
-    [matchGroup, effectiveMatch, teamMap],
+    () =>
+      buildLiveStandings(
+        matchGroup,
+        hideSpoilers
+          ? { ...effectiveMatch, time_elapsed: 'hidden' }
+          : effectiveMatch,
+        teamMap,
+      ),
+    [effectiveMatch, hideSpoilers, matchGroup, teamMap],
   )
   const viewerTimeZone = getViewerTimeZoneLabel()
   const isLive =
@@ -431,6 +442,15 @@ function LiveMatchPage({
               : 'Match centre'}
           {lastUpdated && <small>Last update {lastUpdated.toLocaleTimeString()}</small>}
         </div>
+        <label className="spoiler-mode-toggle compact">
+          <input
+            type="checkbox"
+            checked={hideSpoilers}
+            onChange={(event) => onToggleSpoilers?.(event.target.checked)}
+          />
+          <span aria-hidden="true" />
+          Spoiler-free {hideSpoilers ? 'on' : 'off'}
+        </label>
       </header>
 
       {historical && (
@@ -483,9 +503,11 @@ function LiveMatchPage({
                   </span>
                   <span className="compact-past-score">
                     <strong>
-                      {fixture.home_score} – {fixture.away_score}
+                      {hideSpoilers
+                        ? 'Hidden'
+                        : `${fixture.home_score} – ${fixture.away_score}`}
                     </strong>
-                    <small>Group {fixture.group}</small>
+                    <small>{hideSpoilers ? 'Spoiler-free' : `Group ${fixture.group}`}</small>
                   </span>
                 </button>
               )
@@ -515,11 +537,13 @@ function LiveMatchPage({
           </article>
 
           <div className="live-score">
-            <strong>{effectiveMatch.home_score}</strong>
+            <strong>{hideSpoilers ? '–' : effectiveMatch.home_score}</strong>
             <span>–</span>
-            <strong>{effectiveMatch.away_score}</strong>
+            <strong>{hideSpoilers ? '–' : effectiveMatch.away_score}</strong>
             <small>
-              {isLive && !isBreak && liveStatus?.displayClock
+              {hideSpoilers
+                ? 'Score hidden'
+                : isLive && !isBreak && liveStatus?.displayClock
                 ? `${liveStatus.displayClock} · live clock`
                 : !isLive
                   ? `${formatViewerTime(match.date)} · ${viewerTimeZone}`
@@ -538,9 +562,12 @@ function LiveMatchPage({
           <span>{stadium?.fifa_name || stadium?.name_en}</span>
           <span>{stadium?.city_en}</span>
         </div>
+        {!historical && (
+          <MatchImplicationsCard implications={implications} />
+        )}
       </section>
 
-      {!historical && <section className="card probability-card">
+      {!historical && !hideSpoilers && <section className="card probability-card">
         <div className="probability-head">
           <div>
             <p className="eyebrow">Live win probability</p>
@@ -604,7 +631,11 @@ function LiveMatchPage({
             </div>
             <span>{timeline.length} events</span>
           </div>
-          {timeline.length ? (
+          {hideSpoilers ? (
+            <p className="live-message">
+              Timeline events are hidden in spoiler-free mode.
+            </p>
+          ) : timeline.length ? (
             <div className="timeline-list">
               {[...timeline].reverse().map((event) => {
                 const isGoal = event.type?.type === 'goal' || event.scoringPlay
@@ -756,9 +787,11 @@ function LiveMatchPage({
                   <strong>{entry.team?.name_en}</strong>
                   {entry.isPlaying && (
                     <small>
-                      {String(entry.team_id) === String(match.home_team_id)
-                        ? `${effectiveMatch.home_score}-${effectiveMatch.away_score}`
-                        : `${effectiveMatch.away_score}-${effectiveMatch.home_score}`}
+                      {hideSpoilers
+                        ? 'Score hidden'
+                        : String(entry.team_id) === String(match.home_team_id)
+                          ? `${effectiveMatch.home_score}-${effectiveMatch.away_score}`
+                          : `${effectiveMatch.away_score}-${effectiveMatch.home_score}`}
                     </small>
                   )}
                 </span>
@@ -773,8 +806,9 @@ function LiveMatchPage({
           </div>
           {isLive && (
             <p className="standings-note">
-              The current score is applied provisionally. The official table replaces it
-              after full time.
+              {hideSpoilers
+                ? 'In-play score details are hidden in spoiler-free mode.'
+                : 'The current score is applied provisionally. The official table replaces it after full time.'}
             </p>
           )}
         </section>
