@@ -13,6 +13,9 @@ The current layouts, card structure, navigation style, responsive behavior, and 
 - Show the current league table in the existing standings layout.
 - Predict the likely league champion using an explainable model.
 - Replace national squads with the clubs and players in the selected league.
+- Preserve the player watchlist experience for club players.
+- Preserve spoiler-free browsing across overview, fixtures, live match, results, timeline, and standings.
+- Preserve contextual match-meaning cards, adapted from group qualification stakes to league table stakes.
 - Let users select a favourite club and receive a personalized overview.
 - Keep the site useful throughout the domestic football season.
 
@@ -42,8 +45,12 @@ Design the league configuration so competitions such as the Champions League, Eu
 | AI Winner Prediction | Predicted league champion and title probabilities |
 | Knockout Map | Remove from navigation and application |
 | Squads | Clubs and their current squads |
+| Players | Player watchlist for selected-league club players |
 | My World Cup | My Team |
 | Favourite national teams | One primary favourite club, with optional additional followed clubs later |
+| Followed World Cup players | Followed club players across selected and favourite leagues |
+| Spoiler-free mode | Spoiler-free football mode across live and completed matches |
+| What this match means | League-context match stakes and table implications |
 | Tournament calendar export | Favourite club fixture calendar |
 
 ## Navigation
@@ -52,10 +59,11 @@ Retain the existing navigation layout and update it to:
 
 1. Overview
 2. My Team
-3. Live Match
-4. Past Fixtures
-5. AI Prediction
-6. Squads
+3. Players
+4. Live Match
+5. Past Fixtures
+6. AI Prediction
+7. Squads
 
 Remove `Knockout Map`.
 
@@ -94,6 +102,8 @@ Update the hero and dashboard cards to show:
 - Current league table using the existing group-table visual style.
 - Favourite team highlighting throughout the fixture list and table.
 - A favourite team summary in the existing team snapshot area.
+- Spoiler-free mode toggle.
+- A compact match-stakes card for the live or next spotlight match.
 
 The favourite team summary can include:
 
@@ -107,6 +117,17 @@ The favourite team summary can include:
 
 When no favourite team is selected, the card should invite the user to choose one.
 
+Spoiler-free mode must keep using the current top-level toggle pattern and should hide:
+
+- Live scores
+- Latest result scores
+- Completed-match scores in compact lists
+- Timeline events that reveal goals or cards
+- In-play score details in standings
+- Live win probability, when it would reveal the score context
+
+It should not hide fixture names, kickoff times, stadiums, or navigation.
+
 ### 2. Fixtures and Live Match
 
 Reuse the current fixtures and live-match layouts.
@@ -117,9 +138,11 @@ Required behavior:
 - Group fixtures by date or matchweek where useful.
 - Keep kickoff times localized to the viewer.
 - Preserve compact matchday mode.
+- Preserve spoiler-free mode in both standard and compact fixture layouts.
 - Highlight the favourite team's fixtures.
 - Continue polling during live matches.
 - Show score, match status, timeline, statistics, and lineups when supplied by the provider.
+- Show a match-stakes card when meaningful league implications can be calculated.
 - Handle postponed, cancelled, suspended, and rescheduled matches explicitly.
 
 Replace World Cup-specific labels such as group and tournament matchday with:
@@ -139,6 +162,7 @@ Add:
 - Team filter
 - Date range or month filter
 - Favourite team shortcut
+- Spoiler-free mode for completed-score lists and match detail pages
 - Clear empty states when a provider has incomplete historical data
 
 Match details should continue to show final score, statistics, timeline, and lineups where available.
@@ -164,6 +188,8 @@ Display:
 Add visual qualification and relegation markers based on league configuration rather than hard-coded positions. For example, Champions League places and relegation places differ between competitions and seasons.
 
 Prefer official provider standings. Keep a local standings calculator as a fallback and for verification.
+
+Live match pages should preserve the current in-play standings panel. For domestic leagues, the provisional table should apply the current match score to the selected league table while clearly marking it as in-play and hiding score-derived details when spoiler-free mode is enabled.
 
 ### 5. AI Prediction
 
@@ -219,7 +245,33 @@ The club selector should list only clubs in the active league. For each club sho
 
 The existing pitch and projected XI layout can remain. Static World Cup squad JSON and hard-coded national-team formations should be removed once the league data source is ready.
 
-### 7. My Team
+### 7. Players
+
+Preserve the newly added `Players` page as a club-player watchlist.
+
+The first football fan-zone version should let users:
+
+- Search players by name, club, position, and shirt number.
+- Follow and unfollow players.
+- Store followed player IDs locally.
+- See followed-player cards with goals, assists, cards, minutes, and position-specific secondary stats.
+- See each followed player's next fixture.
+- See recent notable events such as goals or cards.
+- Handle unavailable match-summary data without losing the watchlist.
+
+In the World Cup version, the watchlist is based on confirmed national squads and ESPN match summaries. In the football fan-zone version, it should use selected-league club squads and provider match details.
+
+For launch, player stats can be league-only for the selected season. Later, the watchlist can support:
+
+- Cross-league followed players.
+- Player detail pages.
+- Injury and suspension status.
+- Starts, substitutions, expected goals, expected assists, and goalkeeper-specific metrics.
+- Alerts when a followed player starts, scores, assists, is booked, or is substituted.
+
+If a followed player moves clubs or leaves the selected league, keep the saved player entry and show a clear unavailable or transferred state rather than silently removing it.
+
+### 8. My Team
 
 Rename `My World Cup` to `My Team`.
 
@@ -290,12 +342,34 @@ Replace World Cup-shaped objects with provider-neutral models:
 - `Venue`
 - `Standing`
 - `MatchDetails`
+- `MatchImplication`
 - `Prediction`
+- `PlayerWatchlistEntry`
 - `UserPreferences`
 
 Components should consume normalized data rather than raw provider responses. This will make it possible to change data providers without rewriting the UI.
 
 Keep compatibility fields only during migration. New code should use football-generic names such as `homeTeamId`, `awayTeamId`, `badge`, `competitionId`, and `matchweek`.
+
+`MatchDetails` should include enough normalized data for the current live-match, results, and player-watchlist features:
+
+- Score and status
+- Live clock
+- Timeline events
+- Team statistics
+- Rosters and lineups
+- Player match stats
+- Substitution events
+- Venue
+- Provider event ID
+
+`MatchImplication` should be generic enough to describe league stakes, not only group qualification. Examples:
+
+- A club can move into first place with a win.
+- A club can enter or protect a Champions League place.
+- A club can move out of the relegation zone.
+- A club can mathematically secure survival, Europe, or the title.
+- A derby or favourite-team fixture has extra dashboard context.
 
 ### Data Service Boundary
 
@@ -318,7 +392,9 @@ Suggested API responsibilities:
 /api/football/:competitionId/fixtures
 /api/football/:competitionId/standings
 /api/football/:competitionId/teams
+/api/football/:competitionId/players
 /api/football/matches/:matchId
+/api/football/players/:playerId
 ```
 
 The server layer should hold provider keys, normalize provider errors, apply caching, and avoid exposing secrets to the browser.
@@ -331,7 +407,9 @@ Evaluate candidates against:
 
 - Coverage for all target leagues
 - Fixtures, results, standings, squads, lineups, and live statistics
+- Player match stats, season stats, appearances, cards, minutes, and substitutions
 - Stable club and competition IDs across seasons
+- Stable player IDs across transfers and seasons
 - Live update speed
 - Historical data availability
 - Rate limits and caching terms
@@ -347,9 +425,11 @@ Use different cache policies by data type:
 
 - Competition metadata and clubs: long cache
 - Squads: daily refresh
+- Player season stats: refresh after completed matches
 - Upcoming fixtures: periodic refresh
 - Standings and completed results: refresh after matches
 - Live matches: poll every 5-15 seconds, subject to provider limits
+- Match summaries used by player watchlists: refresh after live and completed matches
 - Predictions: recalculate after relevant fixture or standings updates
 
 Cache data per competition and season. A failure in one league must not remove previously cached data for another league.
@@ -362,6 +442,8 @@ Replace World Cup-specific local-storage keys with versioned generic keys:
 football-fan-zone-dashboard-v1
 football-fan-zone-preferences-v1
 football-fan-zone-compact-matchday-v1
+football-fan-zone-spoiler-free-v1
+football-fan-zone-player-watchlist-v1
 ```
 
 Add a one-time migration from the current preference format where practical.
@@ -373,10 +455,14 @@ Application-level state should include:
 - Selected fixture
 - Selected club
 - Favourite club
+- Followed player IDs
+- Spoiler-free preference
 - Cached league data
 - Loading, stale-data, and error status per league
 
 Changing league must reset selected fixtures and clubs to valid choices from the new league without clearing the favourite club.
+
+Followed players should not be cleared when changing leagues. If a followed player is outside the selected league, either show them in a separate unavailable/cross-league section or filter them from the current view with a clear message.
 
 ## Naming and Content Changes
 
@@ -398,6 +484,9 @@ Also update:
 - Empty states
 - Calendar event descriptions and filenames
 - Browser notification text and tags
+- Spoiler-free labels
+- Player watchlist headings and helper text
+- Match-stakes copy
 - Analytics labels
 - API paths
 - Cache keys
@@ -417,6 +506,8 @@ Remove after the football data replacement is working:
 - Hard-coded World Cup stadium time zones
 - Hard-coded tournament start date
 - National-team formation map
+- National-team player watchlist identifiers
+- Group-only match implication logic
 - World Cup API routes and proxy code
 - World Cup-specific fixture snapshot
 - FIFA-specific source links
@@ -448,13 +539,17 @@ Do not remove these pieces at the start of the migration. Keep the current site 
 - Replace group labels with league and matchweek labels.
 - Connect live fixtures and completed results.
 - Convert group standings into the full league table.
+- Preserve spoiler-free rendering across overview, fixture lists, live match, results, timeline, and standings.
+- Replace group qualification implications with league-table implications.
 - Verify timezone, postponed-match, and favourite-team behavior.
 
-### Phase 4: My Team and Squads
+### Phase 4: My Team, Players, and Squads
 
 - Migrate preferences to a primary favourite club.
+- Migrate player watchlist storage to generic football keys.
 - Repurpose My World Cup as My Team.
 - Connect club and player squad data.
+- Connect player search and player watchlist cards to club squads and provider player stats.
 - Adapt calendar exports and notifications.
 - Add favourite-team content to the overview.
 
@@ -471,6 +566,8 @@ Do not remove these pieces at the start of the migration. Keep the current site 
 - Rename remaining World Cup-specific files, functions, keys, and copy.
 - Replace branding assets and metadata.
 - Remove obsolete static data and APIs.
+- Remove group-only qualification wording from match-stakes cards.
+- Replace national-player identifiers with stable provider player IDs.
 - Update the README with setup, data provider, caching, and prediction details.
 
 ### Phase 7: Verification and Launch
@@ -479,6 +576,9 @@ Do not remove these pieces at the start of the migration. Keep the current site 
 - Test switching leagues from every page.
 - Test mobile navigation and league selection.
 - Test favourite-team persistence across reloads and league changes.
+- Test player-watchlist persistence across reloads and league changes.
+- Test spoiler-free mode on overview, fixtures, live match, results, timeline, and in-play standings.
+- Test match-stakes cards for title, European-place, mid-table, and relegation scenarios.
 - Test live, upcoming, completed, postponed, and cancelled fixtures.
 - Test provider failures and stale cached data.
 - Test notification and calendar behavior.
@@ -495,9 +595,14 @@ Add automated tests around the parts most likely to produce silent errors:
 - Fixture status normalization
 - Timezone display
 - Favourite-team preference migration
+- Player-watchlist preference migration
+- Spoiler-free preference migration
 - League switching
 - Prediction probability totals
 - Simulation behavior with games in hand
+- Match implication calculations for title, European qualification, and relegation races
+- Player stat aggregation from match summaries
+- Stable player identity across provider responses
 - Postponed and rescheduled fixtures
 - Cache isolation between leagues
 
@@ -508,9 +613,12 @@ Add component or browser tests for:
 - League selector
 - Overview rendering
 - Favourite-team selection
+- Spoiler-free toggle behavior
 - Match navigation
 - Result filtering
 - Squad selection
+- Player search and watchlist toggling
+- Match-stakes card rendering and empty states
 - Empty, loading, stale, and error states
 
 ## Launch Acceptance Criteria
@@ -521,6 +629,9 @@ The repurpose is ready when:
 - The selected league persists and has a shareable URL.
 - Overview, live match, past fixtures, table, predictions, squads, and My Team all use the selected league.
 - A user can choose one favourite club and see it reflected on the overview.
+- A user can follow players and see their watchlist persist locally.
+- Spoiler-free mode hides live and completed score details consistently without blocking basic navigation.
+- Match-stakes cards show useful league implications where available and stay hidden when there is nothing meaningful to say.
 - Live, upcoming, completed, postponed, and cancelled matches display correctly.
 - League predictions account for current performance and remaining fixtures.
 - No knockout or group-stage UI remains.
@@ -535,6 +646,9 @@ The repurpose is ready when:
 - Final product name and branding.
 - Production football data provider.
 - Whether one or multiple favourite clubs are supported at launch.
+- Whether player watchlists are selected-league only at launch or cross-league from day one.
+- Whether player alerts are included at launch or deferred.
+- How rich match-stakes cards should be: simple table movement, mathematical clinch/elimination, rivalry context, or all of these.
 - Whether the site supports only the current season or season history.
 - Whether live notifications need a backend and service worker, rather than only working while the site is open.
 - Whether European competitions are part of the initial release or a later phase.

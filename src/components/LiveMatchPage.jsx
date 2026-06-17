@@ -429,29 +429,6 @@ function LiveMatchPage({
   return (
     <main className="live-page">
       <SiteNav activePage={activePage} />
-      <header className="live-topbar">
-        <button type="button" className="back-link" onClick={onBack}>
-          Back to dashboard
-        </button>
-        <div className="live-refresh">
-          <span className={isLive ? 'live-dot' : 'live-dot idle'} />
-          {isLive
-            ? 'Live Updates'
-            : historical
-              ? 'Completed match'
-              : 'Match centre'}
-          {lastUpdated && <small>Last update {lastUpdated.toLocaleTimeString()}</small>}
-        </div>
-        <label className="spoiler-mode-toggle compact">
-          <input
-            type="checkbox"
-            checked={hideSpoilers}
-            onChange={(event) => onToggleSpoilers?.(event.target.checked)}
-          />
-          <span aria-hidden="true" />
-          Spoiler-free {hideSpoilers ? 'on' : 'off'}
-        </label>
-      </header>
 
       {historical && (
         <section className="card past-fixtures-card">
@@ -517,6 +494,32 @@ function LiveMatchPage({
       )}
 
       <section className="card live-score-card">
+        <div className="live-card-actions">
+          <button type="button" className="back-link" onClick={onBack}>
+            Back to dashboard
+          </button>
+          <div className="live-refresh">
+            <span className={isLive ? 'live-dot' : 'live-dot idle'} />
+            {isLive
+              ? 'Live Updates'
+              : historical
+                ? 'Completed match'
+                : 'Match centre'}
+            {lastUpdated && (
+              <small>Last update {lastUpdated.toLocaleTimeString()}</small>
+            )}
+          </div>
+          <label className="spoiler-mode-toggle compact">
+            <input
+              type="checkbox"
+              checked={hideSpoilers}
+              onChange={(event) => onToggleSpoilers?.(event.target.checked)}
+            />
+            <span aria-hidden="true" />
+            Spoiler-free {hideSpoilers ? 'on' : 'off'}
+          </label>
+        </div>
+
         <div className="live-title-row">
           <div>
             <p className="eyebrow">FIFA World Cup 2026</p>

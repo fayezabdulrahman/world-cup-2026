@@ -611,6 +611,7 @@ function App() {
         }
         hideSpoilers={hideSpoilers}
         onOpenLatestResult={handleOpenLatestResult}
+        onToggleSpoilers={setHideSpoilers}
         spotlightImplications={spotlightImplications}
         spotlightMatch={spotlightMatch}
         spotlightStadium={stadiumMap[String(spotlightMatch?.stadium_id)]}
@@ -618,21 +619,6 @@ function App() {
       />
 
       <main className="dashboard">
-        <section className="spoiler-mode-panel" aria-label="Spoiler-free mode">
-          <div>
-            <strong>Spoiler-free mode</strong>
-            <span>Hide live scores and results while you browse fixtures.</span>
-          </div>
-          <label className="spoiler-mode-toggle">
-            <input
-              type="checkbox"
-              checked={hideSpoilers}
-              onChange={(event) => setHideSpoilers(event.target.checked)}
-            />
-            <span aria-hidden="true" />
-            {hideSpoilers ? 'On' : 'Off'}
-          </label>
-        </section>
         {dataWarning && <p className="data-warning">{dataWarning}</p>}
         <section className="feature-grid">
           <FixturesSection
