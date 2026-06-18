@@ -30,7 +30,9 @@ function localTournamentApi() {
           res.statusCode = 200
           res.setHeader(
             'Cache-Control',
-            resource === 'games' ? 'public, max-age=5' : 'public, max-age=3600',
+            resource === 'games'
+              ? 'no-store'
+              : 'public, max-age=3600',
           )
           res.setHeader('Content-Type', 'application/json')
           res.end(JSON.stringify(responsePayload))

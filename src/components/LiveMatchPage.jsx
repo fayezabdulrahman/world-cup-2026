@@ -117,6 +117,32 @@ function normalizeTimeline(events) {
   }, [])
 }
 
+function getFreshestScore(match, liveHomeScore, liveAwayScore) {
+  if (liveHomeScore == null || liveAwayScore == null) {
+    return {
+      home_score: match?.home_score,
+      away_score: match?.away_score,
+    }
+  }
+
+  const feedTotal =
+    numberValue(match?.home_score) + numberValue(match?.away_score)
+  const summaryTotal =
+    numberValue(liveHomeScore) + numberValue(liveAwayScore)
+
+  if (feedTotal > summaryTotal) {
+    return {
+      home_score: match?.home_score,
+      away_score: match?.away_score,
+    }
+  }
+
+  return {
+    home_score: liveHomeScore,
+    away_score: liveAwayScore,
+  }
+}
+
 function getTimelineEmoji(event) {
   const eventType = event.type?.type || ''
   const eventText = `${event.type?.text || ''} ${event.shortText || ''}`.toLowerCase()
@@ -306,6 +332,7 @@ function LiveMatchPage({
         if (!eventId) {
           const scoreboardResponse = await fetch(
             `${ESPN_BASE}/scoreboard?dates=${getScoreboardDateRange(new Date(matchDateTime))}`,
+            { cache: 'no-store' },
           )
           if (!scoreboardResponse.ok) throw new Error('Scoreboard lookup failed')
 
@@ -316,7 +343,10 @@ function LiveMatchPage({
 
         if (!eventId) throw new Error('Live event not found')
 
-        const summaryResponse = await fetch(`${ESPN_BASE}/summary?event=${eventId}`)
+        const summaryResponse = await fetch(
+          `${ESPN_BASE}/summary?event=${eventId}`,
+          { cache: 'no-store' },
+        )
         if (!summaryResponse.ok) throw new Error('Live summary failed')
         const summary = await summaryResponse.json()
 
@@ -364,14 +394,14 @@ function LiveMatchPage({
   const liveAway = liveCompetition?.competitors?.find(
     (team) => team.homeAway === 'away',
   )
-  const effectiveMatch = useMemo(
-    () => ({
+  const effectiveMatch = useMemo(() => {
+    const score = getFreshestScore(match, liveHome?.score, liveAway?.score)
+
+    return {
       ...match,
-      home_score: liveHome?.score ?? match?.home_score,
-      away_score: liveAway?.score ?? match?.away_score,
-    }),
-    [liveAway?.score, liveHome?.score, match],
-  )
+      ...score,
+    }
+  }, [liveAway?.score, liveHome?.score, match])
   const matchGroup = groups.find((group) => group.name === match?.group)
   const liveStandings = useMemo(
     () =>

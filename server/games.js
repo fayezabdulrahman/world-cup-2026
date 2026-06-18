@@ -1,7 +1,8 @@
 const ESPN_SCOREBOARD_URL =
   'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard'
 const TOURNAMENT_RANGE = '20260611-20260719'
-const CACHE_TTL_MS = 10_000
+const LIVE_CACHE_TTL_MS = 1_000
+const IDLE_CACHE_TTL_MS = 10_000
 
 let cachedPayload = null
 let cacheExpiresAt = 0
@@ -260,7 +261,11 @@ export async function getMergedGames() {
     pendingRequest = refreshTournamentData()
       .then((payload) => {
         cachedPayload = payload
-        cacheExpiresAt = Date.now() + CACHE_TTL_MS
+        const hasLiveMatch = payload.games.some(
+          (game) => String(game.time_elapsed).toLowerCase() === 'live',
+        )
+        cacheExpiresAt =
+          Date.now() + (hasLiveMatch ? LIVE_CACHE_TTL_MS : IDLE_CACHE_TTL_MS)
         return payload
       })
       .finally(() => {

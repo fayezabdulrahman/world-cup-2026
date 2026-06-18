@@ -10,6 +10,8 @@ export async function proxyJson({
   cacheSeconds,
   req,
   res,
+  staleIfErrorSeconds = 86400,
+  staleWhileRevalidateSeconds = 86400,
   targetUrl,
   timeoutMs = DEFAULT_TIMEOUT_MS,
 }) {
@@ -34,14 +36,20 @@ export async function proxyJson({
 
       const payload = await response.json()
 
-      res.setHeader(
-        'Cache-Control',
-        `public, s-maxage=${cacheSeconds}, stale-while-revalidate=86400, stale-if-error=86400`,
-      )
-      res.setHeader(
-        'Vercel-CDN-Cache-Control',
-        `s-maxage=${cacheSeconds}, stale-while-revalidate=86400`,
-      )
+      const cacheDirectives = [`public`, `s-maxage=${cacheSeconds}`]
+      const cdnCacheDirectives = [`s-maxage=${cacheSeconds}`]
+
+      if (staleWhileRevalidateSeconds > 0) {
+        const directive = `stale-while-revalidate=${staleWhileRevalidateSeconds}`
+        cacheDirectives.push(directive)
+        cdnCacheDirectives.push(directive)
+      }
+      if (staleIfErrorSeconds > 0) {
+        cacheDirectives.push(`stale-if-error=${staleIfErrorSeconds}`)
+      }
+
+      res.setHeader('Cache-Control', cacheDirectives.join(', '))
+      res.setHeader('Vercel-CDN-Cache-Control', cdnCacheDirectives.join(', '))
       res.status(200).json(payload)
       return
     } catch (error) {
