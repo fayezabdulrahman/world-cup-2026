@@ -47,9 +47,6 @@ function KnockoutPage({ projection, completedGroupMatches }) {
 
       <header className="knockout-hero">
         <div>
-          <a className="back-link" href="#overview">
-            Back to overview
-          </a>
           <p className="eyebrow">Live tournament projection</p>
           <h1>Road to the Final</h1>
           <p className="knockout-intro">

@@ -25,6 +25,24 @@ So the prediction score mixes:
 2. qualifying form,
 3. live World Cup form from current group-stage stats.
 
+## What to watch today
+
+The daily shortlist ranks unfinished matches scheduled for the viewer's local
+calendar day. Its score is intentionally explainable and combines:
+
+1. qualification impact from the app's live group tables,
+2. knockout-stage consequences,
+3. team strength from the FIFA ranking profiles,
+4. known international rivalries,
+5. how closely matched the two teams are.
+
+Fixture times, match status, scores, teams, groups, and venues come from the
+ESPN World Cup scoreboard feed already normalized by `server/games.js`. The
+ranking is recalculated in the browser whenever that tournament data refreshes.
+For a production data contract with an SLA, Sportradar's Soccer API or the
+World Cup competition in football-data.org can replace the scoreboard adapter
+without changing the watch-ranking model.
+
 ## React Compiler
 
 The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).

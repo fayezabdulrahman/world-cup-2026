@@ -15,6 +15,7 @@ import PredictorSection from './components/PredictorSection'
 import SquadSection from './components/SquadSection'
 import SiteNav from './components/SiteNav'
 import TeamSnapshotCard from './components/TeamSnapshotCard'
+import WhatToWatchPage from './components/WhatToWatchPage'
 import { buildPredictionRows } from './lib/predictions'
 import { buildKnockoutProjection } from './lib/knockout'
 import { buildMatchImplications } from './lib/qualification'
@@ -96,6 +97,7 @@ function App() {
     const hash = window.location.hash.slice(1)
     return [
       'live',
+      'watch',
       'results',
       'predictions',
       'knockout',
@@ -229,6 +231,7 @@ function App() {
       setPage(
         [
           'live',
+          'watch',
           'results',
           'predictions',
           'knockout',
@@ -291,6 +294,11 @@ function App() {
   const handleOpenLatestResult = (fixture) => {
     setSelectedCompletedMatchId(fixture.id)
     window.location.hash = 'results'
+  }
+
+  const handleOpenWatchMatch = (fixture) => {
+    handleSelectMatch(fixture)
+    window.location.hash = 'overview'
   }
 
   const teamMap = Object.fromEntries(
@@ -485,6 +493,24 @@ function App() {
     )
   }
 
+  if (page === 'watch') {
+    return (
+      <div className="page-shell">
+        <div className="ambient ambient-left" />
+        <div className="ambient ambient-right" />
+        <WhatToWatchPage
+          games={dashboard.games}
+          groupTableRows={groupTableRows}
+          onOpenMatch={handleOpenWatchMatch}
+          predictionProfiles={teamPredictionProfiles}
+          stadiumMap={stadiumMap}
+          teamMap={teamMap}
+        />
+        <Analytics />
+      </div>
+    )
+  }
+
   if (page === 'results') {
     return (
       <div className="page-shell">
@@ -564,9 +590,6 @@ function App() {
         <main className="detail-page">
           <SiteNav activePage={page} />
           <header className="detail-page-header">
-            <a className="back-link" href="#overview">
-              Back to overview
-            </a>
             <div>
               <p className="eyebrow">World Cup 2026</p>
               <h1>

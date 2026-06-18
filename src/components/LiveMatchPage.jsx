@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import teamPredictionProfiles from '../data/teamPredictionProfiles.json'
 import {
   calculateLiveWinProbability,
@@ -273,11 +273,21 @@ function LiveMatchPage({
   const [timeline, setTimeline] = useState([])
   const [lastUpdated, setLastUpdated] = useState(null)
   const [feedError, setFeedError] = useState(false)
+  const selectedMatchRef = useRef(null)
   const matchEventId = match?.espn_event_id || ''
   const matchDateTime = match?.date?.getTime()
   const matchHomeName = match?.home_team_name_en
   const matchAwayName = match?.away_team_name_en
   const matchTimeElapsed = match?.time_elapsed
+
+  useLayoutEffect(() => {
+    if (!historical) return
+
+    selectedMatchRef.current?.scrollIntoView({
+      block: 'nearest',
+      inline: 'nearest',
+    })
+  }, [historical, match?.id])
 
   useEffect(() => {
     if (!matchDateTime || !matchHomeName || !matchAwayName) return undefined
@@ -452,6 +462,7 @@ function LiveMatchPage({
               return (
                 <button
                   key={fixture.id}
+                  ref={fixture.id === match.id ? selectedMatchRef : undefined}
                   type="button"
                   className={fixture.id === match.id ? 'active' : ''}
                   onClick={() => onSelectMatch?.(fixture)}

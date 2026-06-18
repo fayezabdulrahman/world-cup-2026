@@ -143,7 +143,9 @@ function HeroSection({
           )}
 
           <div className="hero-foot">
-            <div className="hero-live-stack">
+            <div
+              className={`hero-live-stack${isLive ? '' : ' is-upcoming'}`}
+            >
               {liveSpotlightSummary && (
                 <div className="hero-live-context">
                   <span>{liveSpotlightSummary.label}</span>
