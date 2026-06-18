@@ -9,6 +9,9 @@
     },
     "api/espn/*.js": {
       "maxDuration": 30
+    },
+    "api/odds/*.js": {
+      "maxDuration": 30
     }
   }
 }

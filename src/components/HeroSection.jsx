@@ -3,6 +3,7 @@ import {
   isMatchInPlay,
 } from '../lib/worldCup'
 import MatchImplicationsCard from './MatchImplicationsCard'
+import MatchOdds from './MatchOdds'
 import RecentResultSection from './RecentResultSection'
 import SiteNav from './SiteNav'
 
@@ -152,6 +153,9 @@ function HeroSection({
                   <strong>{liveSpotlightSummary.value}</strong>
                   <small>{liveSpotlightSummary.detail}</small>
                 </div>
+              )}
+              {!isLive && (
+                <MatchOdds compact match={spotlightMatch} />
               )}
               <p className="hero-meta">
                 Group {spotlightMatch?.group} · Group matchday{' '}

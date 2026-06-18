@@ -2116,6 +2116,88 @@
   line-height: 1.35;
 }
 
+.match-odds {
+  display: grid;
+  gap: 0.85rem;
+  max-width: 1280px;
+  margin: 1rem auto 0;
+  padding: 1.15rem 1.25rem;
+  border: 1px solid rgba(255, 190, 99, 0.2);
+  border-radius: 20px;
+  background:
+    linear-gradient(135deg, rgba(255, 190, 99, 0.09), transparent 42%),
+    rgba(8, 16, 39, 0.9);
+}
+
+.match-odds.compact {
+  width: min(29rem, 100%);
+  margin: 0;
+  padding: 0.85rem 0.95rem;
+  border-radius: 14px;
+}
+
+.match-odds-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.match-odds-head span {
+  color: rgba(201, 214, 255, 0.72);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.match-odds-head strong {
+  color: var(--accent-warm);
+  font-size: 0.82rem;
+}
+
+.match-odds-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.match-odds-grid article {
+  display: grid;
+  gap: 0.28rem;
+  min-width: 0;
+  padding: 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  text-align: center;
+}
+
+.match-odds-grid span {
+  overflow: hidden;
+  color: var(--text-soft);
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.match-odds-grid strong {
+  color: var(--text-main);
+  font-size: 1.05rem;
+}
+
+.match-odds-message {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.84rem;
+}
+
+.match-odds > small {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
 .hero-live-cta {
   min-width: 0;
   height: 3rem;
@@ -2999,6 +3081,45 @@
   font-size: 0.82rem;
 }
 
+.fixture-odds-price {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.18rem;
+  width: fit-content;
+  padding: 0.18rem 0.36rem;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text-main);
+}
+
+.fixture-odds-price small {
+  color: var(--text-muted);
+  font-size: 0.56rem;
+  font-weight: 800;
+}
+
+.fixture-odds-price strong {
+  font-size: 0.7rem;
+}
+
+.match-team .fixture-odds-price {
+  margin-top: 0.25rem;
+}
+
+.match-focus-draw-odds {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.3rem;
+  color: var(--text-soft);
+  font-size: 0.72rem;
+}
+
+.match-focus-draw-odds strong {
+  color: var(--text-main);
+  font-size: 0.8rem;
+}
+
 .spotlight-card .section-head > .muted,
 .predictor-card .section-head > .muted {
   max-width: 24rem;
@@ -3187,6 +3308,15 @@
   gap: 0.45rem;
 }
 
+.compact-fixture-teams .fixture-odds-price {
+  margin-left: auto;
+  padding: 0.14rem 0.32rem;
+}
+
+.compact-fixture-teams .fixture-odds-price strong {
+  font-size: 0.7rem;
+}
+
 .compact-fixture-teams img {
   width: 1.15rem;
   height: 1.15rem;
@@ -3214,6 +3344,24 @@
 .compact-fixture-status small {
   color: var(--text-muted);
   font-size: 0.66rem;
+}
+
+.compact-draw-odds {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.22rem;
+  width: fit-content;
+  margin-top: 0.12rem;
+  padding: 0.12rem 0.28rem;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.055);
+  color: var(--text-muted);
+  font-size: 0.6rem;
+}
+
+.compact-draw-odds strong {
+  color: var(--text-main);
+  font-size: 0.7rem;
 }
 
 .compact-fixture-status {
@@ -4356,6 +4504,10 @@
     width: 100%;
   }
 
+  .match-odds.compact {
+    width: 100%;
+  }
+
   .hero-foot {
     align-items: stretch;
     flex-direction: column;
@@ -4603,6 +4755,22 @@
 
   .compact-fixture-context small {
     display: none;
+  }
+
+  .compact-draw-odds {
+    display: inline-flex;
+  }
+
+  .compact-fixture-teams {
+    min-width: 0;
+  }
+
+  .compact-fixture-teams > span {
+    gap: 0.3rem;
+  }
+
+  .compact-fixture-teams .fixture-odds-price {
+    padding-inline: 0.22rem;
   }
 
   .compact-fixture-teams strong,

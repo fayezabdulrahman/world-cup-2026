@@ -5,6 +5,12 @@ import {
   getViewerTimeZoneLabel,
   isMatchInPlay,
 } from '../lib/worldCup'
+import {
+  fetchOddsDay,
+  findFixtureOdds,
+  formatFractionalOdds,
+  getOddsDayUrl,
+} from '../lib/odds'
 
 const COMPACT_VIEW_KEY = 'world-cup-2026-compact-matchday-v1'
 const PREFERENCES_KEY = 'world-cup-2026-my-world-cup-v1'
@@ -55,12 +61,24 @@ function getCompactLiveMeta(fixture) {
     : 'Live now'
 }
 
+function OddsPrice({ label, value }) {
+  if (value == null) return null
+
+  return (
+    <span className="fixture-odds-price">
+      {label && <small>{label}</small>}
+      <strong>{formatFractionalOdds(value)}</strong>
+    </span>
+  )
+}
+
 function CompactFixtureRow({
   favoriteIdSet,
   fixture,
   hideSpoilers,
   isActive,
   onSelectMatch,
+  odds,
   teamMap,
 }) {
   const home = teamMap[String(fixture.home_team_id)]
@@ -90,10 +108,12 @@ function CompactFixtureRow({
         <span>
           <img src={home?.flag || fixture.home_team_flag} alt="" loading="lazy" />
           <strong>{home?.fifa_code || fixture.home_team_code}</strong>
+          {!isLive && <OddsPrice value={odds?.outcomes.home} />}
         </span>
         <span>
           <img src={away?.flag || fixture.away_team_flag} alt="" loading="lazy" />
           <strong>{away?.fifa_code || fixture.away_team_code}</strong>
+          {!isLive && <OddsPrice value={odds?.outcomes.away} />}
         </span>
       </span>
       <span className="compact-fixture-context">
@@ -101,6 +121,11 @@ function CompactFixtureRow({
           {fixture.group ? `Group ${fixture.group}` : fixture.type?.replaceAll('-', ' ')}
         </strong>
         <small>Matchday {fixture.matchday || 'TBD'}</small>
+        {!isLive && odds && (
+          <span className="compact-draw-odds">
+            Draw <strong>{formatFractionalOdds(odds.outcomes.draw)}</strong>
+          </span>
+        )}
       </span>
       <span className="compact-fixture-status">
         <strong>{status}</strong>
@@ -126,18 +151,31 @@ function FixturesSection({
 }) {
   const [isCompact, setIsCompact] = useState(readCompactPreference)
   const [favoriteTeamIds, setFavoriteTeamIds] = useState(readFavoriteTeamIds)
+  const [todayOddsEvents, setTodayOddsEvents] = useState([])
   const viewerTimeZone = getViewerTimeZoneLabel()
   const selectedMatchIsLive = isMatchInPlay(selectedMatch)
   const favoriteIdSet = useMemo(
     () => new Set(favoriteTeamIds),
     [favoriteTeamIds],
   )
-  const todayFixtures = upcomingFixtures.filter((fixture) =>
-    isToday(fixture.date),
+  const todayFixtures = useMemo(
+    () => upcomingFixtures.filter((fixture) => isToday(fixture.date)),
+    [upcomingFixtures],
   )
-  const laterFixtures = upcomingFixtures
-    .filter((fixture) => !isToday(fixture.date))
-    .slice(0, 6)
+  const laterFixtures = useMemo(
+    () =>
+      upcomingFixtures
+        .filter((fixture) => !isToday(fixture.date))
+        .slice(0, 6),
+    [upcomingFixtures],
+  )
+  const todayOddsUrl = getOddsDayUrl(todayFixtures[0]?.date)
+  const selectedMatchOdds =
+    selectedMatch &&
+    isToday(selectedMatch.date) &&
+    !selectedMatchIsLive
+      ? findFixtureOdds(todayOddsEvents, selectedMatch)
+      : null
 
   useEffect(() => {
     localStorage.setItem(COMPACT_VIEW_KEY, String(isCompact))
@@ -153,6 +191,26 @@ function FixturesSection({
       window.removeEventListener('storage', refreshFavorites)
     }
   }, [])
+
+  useEffect(() => {
+    if (!todayFixtures.length) return undefined
+
+    let active = true
+
+    async function loadTodayOdds() {
+      try {
+        const payload = await fetchOddsDay(todayFixtures[0].date)
+        if (active) setTodayOddsEvents(payload.events || [])
+      } catch {
+        // Odds are optional; fixtures remain fully usable without them.
+      }
+    }
+
+    loadTodayOdds()
+    return () => {
+      active = false
+    }
+  }, [todayFixtures, todayOddsUrl])
 
   return (
     <article
@@ -202,6 +260,7 @@ function FixturesSection({
                     hideSpoilers={hideSpoilers}
                     isActive={fixture.id === selectedMatch?.id}
                     onSelectMatch={onSelectMatch}
+                    odds={findFixtureOdds(todayOddsEvents, fixture)}
                     teamMap={teamMap}
                   />
                 ))}
@@ -287,6 +346,11 @@ function FixturesSection({
                     <strong className="truncate-name">
                       {selectedMatch.home_team_name_en}
                     </strong>
+                    {selectedMatchOdds && (
+                      <OddsPrice
+                        value={selectedMatchOdds.outcomes.home}
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="match-center">
@@ -295,6 +359,14 @@ function FixturesSection({
                       ? `Group ${selectedMatch.group}`
                       : selectedMatch.type.replaceAll('-', ' ')}
                   </span>
+                  {selectedMatchOdds && (
+                    <span className="match-focus-draw-odds">
+                      Draw{' '}
+                      <strong>
+                        {formatFractionalOdds(selectedMatchOdds.outcomes.draw)}
+                      </strong>
+                    </span>
+                  )}
                   <strong>{formatViewerTime(selectedMatch.date)}</strong>
                   <small>Host kickoff {selectedMatch.local_date}</small>
                   <small>
@@ -319,6 +391,11 @@ function FixturesSection({
                     <strong className="truncate-name">
                       {selectedMatch.away_team_name_en}
                     </strong>
+                    {selectedMatchOdds && (
+                      <OddsPrice
+                        value={selectedMatchOdds.outcomes.away}
+                      />
+                    )}
                   </div>
                 </div>
               </div>

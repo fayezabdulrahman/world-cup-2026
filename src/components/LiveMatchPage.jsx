@@ -12,6 +12,7 @@ import {
 } from '../lib/worldCup'
 import { findMatchEvent, getScoreboardDateRange } from '../lib/espn'
 import MatchImplicationsCard from './MatchImplicationsCard'
+import MatchOdds from './MatchOdds'
 import SiteNav from './SiteNav'
 
 const ESPN_BASE = '/api/espn'
@@ -580,6 +581,10 @@ function LiveMatchPage({
           <MatchImplicationsCard implications={implications} />
         )}
       </section>
+
+      {!historical && isLive && !hideSpoilers && (
+        <MatchOdds isLive liveMinute={matchMinute} match={match} />
+      )}
 
       {!historical && !hideSpoilers && <section className="card probability-card">
         <div className="probability-head">
