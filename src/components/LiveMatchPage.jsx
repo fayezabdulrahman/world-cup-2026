@@ -537,9 +537,6 @@ function LiveMatchPage({
 
       <section className="card live-score-card">
         <div className="live-card-actions">
-          <button type="button" className="back-link" onClick={onBack}>
-            Back to dashboard
-          </button>
           <div className="live-refresh">
             <span className={isLive ? 'live-dot' : 'live-dot idle'} />
             {isLive
@@ -564,7 +561,7 @@ function LiveMatchPage({
 
         <div className="live-title-row">
           <div>
-            <p className="eyebrow">FIFA World Cup 2026</p>
+            {/* <p className="eyebrow">FIFA World Cup 2026</p> */}
             <strong>
               Group stage · Group {match.group} · Matchday {match.matchday}
             </strong>

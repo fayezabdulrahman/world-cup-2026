@@ -2387,7 +2387,6 @@
 }
 
 .live-card-actions {
-  display: grid;
   grid-template-columns: minmax(0, auto) minmax(12rem, 1fr) minmax(0, auto);
   margin-bottom: 1.25rem;
 }
@@ -4953,7 +4952,7 @@
   }
 
   .live-card-actions .spoiler-mode-toggle {
-    justify-self: end;
+    justify-self: baseline;
   }
 
   .live-card-actions .live-refresh {
