@@ -81,6 +81,33 @@ function getTimelineEventLabel(event) {
   return event.type?.text || 'Match update'
 }
 
+function getGoalScorerName(event) {
+  const participant = event.participants?.find(
+    (entry) =>
+      entry.type === 'athlete' ||
+      entry.athlete?.displayName ||
+      entry.displayName,
+  )
+  const athlete = event.athletes?.[0] || participant?.athlete
+  const name =
+    athlete?.displayName ||
+    athlete?.shortName ||
+    participant?.displayName ||
+    participant?.athlete?.displayName
+
+  if (name) return name
+
+  const text = event.shortText || event.text || ''
+  return text.split(/goal/i)[0].replace(/^\s*\d+'\s*/, '').trim() || 'Goal'
+}
+
+function getTimelineEventKey(event, index) {
+  return (
+    event.id ||
+    `${event.type?.type || 'event'}-${event.clock?.value || event.clock?.displayValue || index}-${index}`
+  )
+}
+
 function normalizeTimeline(events) {
   return (events || []).reduce((normalized, event) => {
     const eventType = event.type?.type
@@ -288,7 +315,6 @@ function LiveMatchPage({
   implications,
   match,
   matchOptions = [],
-  onBack,
   onSelectMatch,
   onToggleSpoilers,
   stadium,
@@ -301,6 +327,7 @@ function LiveMatchPage({
   const [lastUpdated, setLastUpdated] = useState(null)
   const [feedError, setFeedError] = useState(false)
   const selectedMatchRef = useRef(null)
+  const timelineEventRefs = useRef(new Map())
   const matchEventId = match?.espn_event_id || ''
   const matchDateTime = match?.date?.getTime()
   const matchHomeName = match?.home_team_name_en
@@ -415,6 +442,65 @@ function LiveMatchPage({
     [effectiveMatch, hideSpoilers, matchGroup, teamMap],
   )
   const viewerTimeZone = getViewerTimeZoneLabel()
+  const displayedTimeline = useMemo(() => [...timeline].reverse(), [timeline])
+  const goalEvents = useMemo(
+    () =>
+      displayedTimeline
+        .map((event, index) => ({
+          event,
+          key: getTimelineEventKey(event, index),
+        }))
+        .filter(
+          ({ event }) => event.type?.type === 'goal' || event.scoringPlay,
+        ),
+    [displayedTimeline],
+  )
+  const goalGroups = useMemo(() => {
+    const teamDetails = [
+      {
+        flag: homeTeam?.flag,
+        name: match?.home_team_name_en,
+        order: 0,
+      },
+      {
+        flag: awayTeam?.flag,
+        name: match?.away_team_name_en,
+        order: 1,
+      },
+    ]
+    const groups = new Map()
+
+    goalEvents.forEach(({ event, key }) => {
+      const eventTeamName = event.team?.displayName || event.team?.name || 'Team'
+      const matchingTeam = teamDetails.find(
+        (team) =>
+          team.name?.localeCompare(eventTeamName, undefined, {
+            sensitivity: 'base',
+          }) === 0,
+      )
+      const groupName = matchingTeam?.name || eventTeamName
+      const groupKey = groupName.toLocaleLowerCase()
+
+      if (!groups.has(groupKey)) {
+        groups.set(groupKey, {
+          events: [],
+          flag: matchingTeam?.flag,
+          name: groupName,
+          order: matchingTeam?.order ?? teamDetails.length + groups.size,
+        })
+      }
+
+      groups.get(groupKey).events.unshift({ event, key })
+    })
+
+    return [...groups.values()].sort((left, right) => left.order - right.order)
+  }, [
+    awayTeam?.flag,
+    goalEvents,
+    homeTeam?.flag,
+    match?.away_team_name_en,
+    match?.home_team_name_en,
+  ])
   const isLive =
     liveStatus?.type?.state === 'in' || match?.time_elapsed === 'live'
   const readableStatus = getReadableMatchStatus(match, liveStatus)
@@ -682,38 +768,104 @@ function LiveMatchPage({
               Timeline events are hidden in spoiler-free mode.
             </p>
           ) : timeline.length ? (
-            <div className="timeline-list">
-              {[...timeline].reverse().map((event) => {
-                const isGoal = event.type?.type === 'goal' || event.scoringPlay
-                const eventLabel = getTimelineEventLabel(event)
+            <>
+              {goalEvents.length > 0 && (
+                <div className="timeline-goal-nav" aria-label="Jump to a goal">
+                  <div className="timeline-goal-nav-heading">
+                    <span aria-hidden="true">⚽</span>
+                    <strong>Jump to goals</strong>
+                    <small>{goalEvents.length} scored</small>
+                  </div>
+                  <div className="timeline-goal-groups">
+                    {goalGroups.map((group) => (
+                      <details
+                        key={group.name}
+                        className="timeline-goal-group"
+                        open
+                      >
+                        <summary>
+                          <span className="timeline-goal-group-team">
+                            {group.flag && <img src={group.flag} alt="" />}
+                            <strong>{group.name}</strong>
+                          </span>
+                          <small>
+                            {group.events.length}{' '}
+                            {group.events.length === 1 ? 'goal' : 'goals'}
+                          </small>
+                          <span
+                            className="timeline-goal-group-chevron"
+                            aria-hidden="true"
+                          >
+                            ▾
+                          </span>
+                        </summary>
+                        <div className="timeline-goal-links">
+                          {group.events.map(({ event, key }) => (
+                            <button
+                              key={key}
+                              type="button"
+                              onClick={() => {
+                                const target = timelineEventRefs.current.get(key)
+                                target?.scrollIntoView({
+                                  behavior: 'smooth',
+                                  block: 'center',
+                                })
+                                target?.focus({ preventScroll: true })
+                              }}
+                            >
+                              <strong>{event.clock?.displayValue || '–'}</strong>
+                              <span>{getGoalScorerName(event)}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </details>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="timeline-list">
+                {displayedTimeline.map((event, index) => {
+                  const isGoal = event.type?.type === 'goal' || event.scoringPlay
+                  const eventLabel = getTimelineEventLabel(event)
+                  const eventKey = getTimelineEventKey(event, index)
 
-                return (
-                  <article
-                    key={event.id}
-                    className={`timeline-event${isGoal ? ' goal' : ''}`}
-                  >
-                    <strong>{event.clock?.displayValue || '–'}</strong>
-                    <span className="timeline-emoji" aria-hidden="true">
-                      {getTimelineEmoji(event)}
-                    </span>
-                    <div>
-                      <div className="timeline-event-meta">
-                        {(event.shortText || isGoal) && <span>{eventLabel}</span>}
-                        {isGoal && event.team?.displayName && (
-                          <strong className="timeline-goal-team">
-                            {event.team.displayName}
-                          </strong>
+                  return (
+                    <article
+                      key={eventKey}
+                      className={`timeline-event${isGoal ? ' goal' : ''}`}
+                      ref={(node) => {
+                        if (node) timelineEventRefs.current.set(eventKey, node)
+                        else timelineEventRefs.current.delete(eventKey)
+                      }}
+                      tabIndex={isGoal ? -1 : undefined}
+                    >
+                      <strong>{event.clock?.displayValue || '–'}</strong>
+                      <span className="timeline-emoji" aria-hidden="true">
+                        {getTimelineEmoji(event)}
+                      </span>
+                      <div>
+                        <div className="timeline-event-meta">
+                          {isGoal ? (
+                            <span className="timeline-goal-label">Goal</span>
+                          ) : (
+                            event.shortText && <span>{eventLabel}</span>
+                          )}
+                          {isGoal && event.team?.displayName && (
+                            <strong className="timeline-goal-team">
+                              {event.team.displayName}
+                            </strong>
+                          )}
+                        </div>
+                        <h3>{event.shortText || eventLabel}</h3>
+                        {(event.text || (!isGoal && event.team?.displayName)) && (
+                          <small>{event.text || event.team.displayName}</small>
                         )}
                       </div>
-                      <h3>{event.shortText || eventLabel}</h3>
-                      {(event.text || (!isGoal && event.team?.displayName)) && (
-                        <small>{event.text || event.team.displayName}</small>
-                      )}
-                    </div>
-                  </article>
-                )
-              })}
-            </div>
+                    </article>
+                  )
+                })}
+              </div>
+            </>
           ) : (
             <p className="live-message">
               Timeline events will appear here as the live feed publishes them.
