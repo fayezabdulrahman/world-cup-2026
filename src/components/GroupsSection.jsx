@@ -7,7 +7,7 @@ function GroupsSection({ groupTableRows, onSelectTeam }) {
           <h2>Group Latest Stats</h2>
         </div>
         <p className="muted">
-          Calculated from completed match results
+          2026 order: points, head-to-head, then overall goal difference
         </p>
       </div>
 

@@ -130,11 +130,21 @@ function getQualificationSignal(match, groupTableRows) {
         score += 6
         label = 'Direct qualification battle'
       }
-      detail = `${homeRow?.team?.name_en || 'The home side'} sit ${homePosition || '—'}${ordinalSuffix(homePosition)} and ${awayRow?.team?.name_en || 'the away side'} sit ${awayPosition || '—'}${ordinalSuffix(awayPosition)} in Group ${match.group}.`
+      const positionDetail = `${homeRow?.team?.name_en || 'The home side'} entered the match ${formatPosition(homePosition)} and ${awayRow?.team?.name_en || 'the away side'} entered it ${formatPosition(awayPosition)} in Group ${match.group}.`
+      const tiebreakDetail =
+        Number(homeRow.pts) === Number(awayRow.pts)
+          ? ` They were level on points, with FIFA's head-to-head tiebreak rules deciding the order.`
+          : ''
+
+      detail = `${positionDetail}${tiebreakDetail}`
     }
   }
 
   return { detail, label, score }
+}
+
+function formatPosition(position) {
+  return position ? `${position}${ordinalSuffix(position)}` : 'unranked'
 }
 
 function ordinalSuffix(position) {
@@ -144,6 +154,8 @@ function ordinalSuffix(position) {
   if (position === 3) return 'rd'
   return 'th'
 }
+
+export { getQualificationSignal }
 
 function getQualitySignal(home, away, profiles) {
   const rankGap = Math.abs(getRank(home, profiles) - getRank(away, profiles))

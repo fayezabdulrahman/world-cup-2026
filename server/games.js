@@ -79,6 +79,47 @@ function getMatchType(event) {
     : event.season?.slug || 'knockout'
 }
 
+function getConductScore(details, teamId) {
+  const cardEvents = (details || []).filter(
+    (detail) =>
+      String(detail.team?.id) === String(teamId) &&
+      (detail.yellowCard || detail.redCard),
+  )
+  const subjects = new Map()
+
+  cardEvents.forEach((detail, index) => {
+    const athleteId = detail.athletesInvolved?.[0]?.id
+    const key = athleteId ? `athlete-${athleteId}` : `official-${index}`
+    const subject = subjects.get(key) || {
+      directRed: false,
+      indirectRed: false,
+      yellow: false,
+    }
+    const cardType = String(detail.type?.text || '').toLowerCase()
+
+    if (
+      detail.redCard &&
+      (cardType.includes('second yellow') || cardType.includes('indirect'))
+    ) {
+      subject.indirectRed = true
+    } else if (detail.redCard) {
+      subject.directRed = true
+    } else if (detail.yellowCard) {
+      subject.yellow = true
+    }
+
+    subjects.set(key, subject)
+  })
+
+  return [...subjects.values()].reduce((score, subject) => {
+    if (subject.indirectRed) return score - 3
+    if (subject.directRed && subject.yellow) return score - 5
+    if (subject.directRed) return score - 4
+    if (subject.yellow) return score - 1
+    return score
+  }, 0)
+}
+
 function buildGames(events) {
   const groupMatchCounts = new Map()
 
@@ -107,6 +148,8 @@ function buildGames(events) {
         away_team_id: away?.team?.id || '',
         home_score: home?.score || '0',
         away_score: away?.score || '0',
+        home_conduct_score: getConductScore(competition.details, home?.team?.id),
+        away_conduct_score: getConductScore(competition.details, away?.team?.id),
         home_team_code: home?.team?.abbreviation || '',
         away_team_code: away?.team?.abbreviation || '',
         home_team_flag: home?.team?.logo || '',

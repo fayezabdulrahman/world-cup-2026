@@ -31,7 +31,8 @@ A responsive tournament companion for following the 2026 FIFA World Cup. It comb
 
 - **What to Watch** ranks the day's fixtures using qualification impact, knockout stakes, team strength, rivalries, and matchup quality
 - **AI Winner Prediction** estimates every team's title probability from FIFA rank, qualifying form, and live tournament performance
-- **Knockout Map** projects the Round of 32, best third-placed qualifiers, later rounds, and tournament winner
+- **Knockout Map** shows the live Round of 32 qualification picture, including all current top-two teams and the ranked best third-placed table
+- **AI Winner Prediction** also maps the modelled route through every knockout round to its projected champion
 - Qualification scenarios identify when a team can secure or lose a top-two place
 
 ### Teams and players
@@ -85,7 +86,9 @@ A responsive tournament companion for following the 2026 FIFA World Cup. It comb
 | Local team prediction profiles | Checked-in FIFA ranking and qualifying-form inputs used by the title and live-probability models |
 | [The Odds API](https://the-odds-api.com/) | Optional pre-match and live head-to-head odds displayed as fractional prices, with Paddy Power, BoyleSports, and Betfair Sportsbook preferred when available |
 
-The app's standings, qualification implications, watch rankings, title probabilities, live probabilities, projected formations, and knockout bracket are calculated locally. They are modelled outputs rather than official FIFA or ESPN forecasts.
+The app's standings, qualification implications, watch rankings, title probabilities, live probabilities, projected formations, and AI knockout bracket are calculated locally. They are modelled outputs rather than official FIFA or ESPN forecasts.
+
+Group standings follow FIFA's 2026 tiebreak order: head-to-head points, head-to-head goal difference, and head-to-head goals scored before overall goal difference and goals scored. Team conduct score and the FIFA Men's World Ranking provide the remaining separators.
 
 The Vercel server functions proxy and normalize provider responses so API details and optional credentials are not exposed directly in the browser. Caching and stale-on-error behavior reduce provider load and improve resilience.
 

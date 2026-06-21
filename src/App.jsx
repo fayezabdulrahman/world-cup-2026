@@ -357,6 +357,7 @@ function App() {
     dashboard.groups,
     dashboard.games,
     teamMap,
+    teamPredictionProfiles,
   )
   const spotlightImplications = buildMatchImplications(
     spotlightMatch,
@@ -603,6 +604,7 @@ function App() {
           {page === 'predictions' ? (
             <PredictorSection
               championPick={championPick}
+              knockoutProjection={knockoutProjection}
               predictionMode={predictionMode}
               predictionRows={predictionRows}
             />

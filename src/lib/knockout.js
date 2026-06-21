@@ -5,7 +5,8 @@ function compareQualificationRows(left, right) {
     numberValue(right.pts) - numberValue(left.pts) ||
     numberValue(right.gd) - numberValue(left.gd) ||
     numberValue(right.gf) - numberValue(left.gf) ||
-    numberValue(right.strengthRating) - numberValue(left.strengthRating) ||
+    numberValue(right.conductScore) - numberValue(left.conductScore) ||
+    numberValue(left.fifaRank || 999) - numberValue(right.fifaRank || 999) ||
     (left.team?.name_en || '').localeCompare(right.team?.name_en || '')
   )
 }
@@ -63,10 +64,13 @@ export function buildKnockoutProjection(groupTableRows, predictionRows) {
       .map((entry) => ({
         ...entry,
         group: group.name,
+        fifaRank:
+          predictionMap[String(entry.team_id)]?.fifaRank ||
+          entry.fifaRank ||
+          999,
         strengthRating:
           predictionMap[String(entry.team_id)]?.strengthRating || 0,
-      }))
-      .sort(compareQualificationRows),
+      })),
   }))
 
   const directQualifiers = projectedGroups.flatMap((group) =>
@@ -118,8 +122,16 @@ export function buildKnockoutProjection(groupTableRows, predictionRows) {
 
   return {
     champion: rounds.at(-1)?.matches[0]?.winner || null,
+    groupQualifiers: projectedGroups.map((group) => ({
+      ...group,
+      teams: group.teams.slice(0, 2),
+    })),
     qualifiers: seededTeams,
     rounds,
+    thirdPlaceTable: projectedGroups
+      .map((group) => group.teams[2])
+      .filter(Boolean)
+      .sort(compareQualificationRows),
     thirdPlaceQualifiers,
   }
 }

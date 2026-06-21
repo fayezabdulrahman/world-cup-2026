@@ -4,42 +4,25 @@ function signedNumber(value) {
   return value > 0 ? `+${value}` : String(value)
 }
 
-function TeamSlot({ entry, winner }) {
-  if (!entry?.team) {
-    return <div className="bracket-team bracket-team-empty">To be decided</div>
-  }
-
+function QualifierRow({ entry, position, status }) {
   return (
-    <div className={`bracket-team ${winner ? 'projected-winner' : ''}`}>
+    <div className="qualifier-row">
+      <span className="qualifier-position">{position}</span>
       <img src={entry.team.flag} alt="" />
       <div>
         <strong>{entry.team.name_en}</strong>
         <span>
-          {entry.team.fifa_code} · {entry.pts} pts · {signedNumber(entry.gd)} GD
+          {entry.pts} pts · {signedNumber(entry.gd)} GD · {entry.gf} GF
         </span>
       </div>
-      <small>{entry.group}</small>
+      <small>{status}</small>
     </div>
   )
 }
 
-function BracketMatch({ match, isFinal }) {
-  return (
-    <article className={`bracket-match ${isFinal ? 'bracket-final' : ''}`}>
-      <TeamSlot
-        entry={match.teams[0]}
-        winner={match.winner?.team_id === match.teams[0]?.team_id}
-      />
-      <TeamSlot
-        entry={match.teams[1]}
-        winner={match.winner?.team_id === match.teams[1]?.team_id}
-      />
-    </article>
-  )
-}
-
 function KnockoutPage({ projection, completedGroupMatches }) {
-  const { champion, rounds, thirdPlaceQualifiers } = projection
+  const { groupQualifiers, thirdPlaceTable, thirdPlaceQualifiers } = projection
+  const hasGroupResults = completedGroupMatches > 0
 
   return (
     <main className="detail-page knockout-page">
@@ -47,23 +30,22 @@ function KnockoutPage({ projection, completedGroupMatches }) {
 
       <header className="knockout-hero">
         <div>
-          <p className="eyebrow">Live tournament projection</p>
-          <h1>Road to the Final</h1>
+          <p className="eyebrow">Live qualification picture</p>
+          <h1>Round of 32</h1>
           <p className="knockout-intro">
-            A projected Round of 32 built from group points, goal difference,
-            goals scored, and the dashboard&apos;s strength model.
+            The 32 teams currently in qualifying positions: the top two in each
+            group plus the eight best third-placed teams.
           </p>
         </div>
 
-        <aside className="champion-callout">
-          <span>Projected champion</span>
-          {champion?.team && (
-            <div>
-              <img src={champion.team.flag} alt="" />
-              <strong>{champion.team.name_en}</strong>
-              <small>{champion.team.fifa_code}</small>
-            </div>
-          )}
+        <aside className="qualification-callout">
+          <span>{hasGroupResults ? 'Live table snapshot' : 'Before group results'}</span>
+          <strong>{thirdPlaceQualifiers.length} of 8</strong>
+          <p>
+            {hasGroupResults
+              ? 'Updates automatically as completed group results change the tables.'
+              : 'FIFA ranking separates teams while every group is still level.'}
+          </p>
         </aside>
       </header>
 
@@ -73,59 +55,74 @@ function KnockoutPage({ projection, completedGroupMatches }) {
           <strong>{completedGroupMatches}</strong>
         </article>
         <article>
-          <span>Projected qualifiers</span>
+          <span>Teams in R32 places</span>
           <strong>32</strong>
         </article>
         <article>
-          <span>Best third-place spots</span>
+          <span>Third-place spots</span>
           <strong>{thirdPlaceQualifiers.length} / 8</strong>
         </article>
         <p>
-          Later-round winners are projected by current model strength. Matchups
-          are seeded for this forecast and will update as group results change.
+          This page does not predict knockout winners. The modelled route to the
+          Final now lives on the AI Prediction page.
         </p>
       </section>
 
-      <section className="bracket-shell">
-        <div className="bracket-toolbar">
+      <section className="qualification-board">
+        <div className="qualification-board-head">
           <div>
-            <p className="eyebrow">Knockout map</p>
-            <h2>Projected bracket</h2>
+            <p className="eyebrow">Automatic places</p>
+            <h2>Top two from every group</h2>
           </div>
-          <div className="bracket-legend">
-            <span>
-              <i className="legend-dot qualified" /> Projected winner
-            </span>
-            <span>
-              <i className="legend-dot third" /> Group shown at right
-            </span>
-          </div>
+          <span>24 teams</span>
         </div>
 
-        <div className="bracket-scroll">
-          <div className="bracket-grid">
-            {rounds.map((round, roundIndex) => (
-              <section
-                className="bracket-round"
-                key={round.name}
-                style={{ '--match-count': round.matches.length }}
-              >
-                <header>
-                  <span>0{roundIndex + 1}</span>
-                  <strong>{round.name}</strong>
-                </header>
-                <div className="bracket-round-matches">
-                  {round.matches.map((match) => (
-                    <BracketMatch
-                      isFinal={roundIndex === rounds.length - 1}
-                      key={match.id}
-                      match={match}
-                    />
-                  ))}
-                </div>
-              </section>
-            ))}
+        <div className="qualification-group-grid">
+          {groupQualifiers.map((group) => (
+            <article className="qualification-group" key={group.name}>
+              <header>
+                <strong>Group {group.name}</strong>
+                <span>Top two</span>
+              </header>
+              {group.teams.map((entry, index) => (
+                <QualifierRow
+                  entry={entry}
+                  key={entry.team_id}
+                  position={index + 1}
+                  status={index === 0 ? 'Winner' : 'Runner-up'}
+                />
+              ))}
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="qualification-board third-place-board">
+        <div className="qualification-board-head">
+          <div>
+            <p className="eyebrow">Across all 12 groups</p>
+            <h2>Best third-placed teams</h2>
           </div>
+          <span>Top 8 advance</span>
+        </div>
+
+        <div className="third-place-table">
+          {thirdPlaceTable.map((entry, index) => (
+            <div
+              className={`third-place-row ${index < 8 ? 'advancing' : ''}`}
+              key={entry.team_id}
+            >
+              <span className="qualifier-position">{index + 1}</span>
+              <img src={entry.team.flag} alt="" />
+              <div>
+                <strong>{entry.team.name_en}</strong>
+                <small>Group {entry.group}</small>
+              </div>
+              <span>{entry.pts} pts</span>
+              <span>{signedNumber(entry.gd)} GD</span>
+              <b>{index < 8 ? 'R32' : 'Outside'}</b>
+            </div>
+          ))}
         </div>
       </section>
     </main>
