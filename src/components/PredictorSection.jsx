@@ -1,8 +1,5 @@
-import ProjectedBracket from './ProjectedBracket'
-
 function PredictorSection({
   championPick,
-  knockoutProjection,
   predictionMode,
   predictionRows,
 }) {
@@ -121,8 +118,6 @@ function PredictorSection({
           ))}
         </div>
       </article>
-
-      <ProjectedBracket projection={knockoutProjection} />
     </>
   )
 }

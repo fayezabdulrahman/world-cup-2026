@@ -74,6 +74,13 @@ function readCachedDashboard() {
   }
 }
 
+function shouldPollForMatchUpdate(game, currentTime) {
+  if (!game?.date || String(game.finished).toLowerCase() === 'true') return false
+
+  const timeSinceKickoff = currentTime - game.date.getTime()
+  return timeSinceKickoff >= 0 && timeSinceKickoff <= 6 * 60 * 60 * 1000
+}
+
 function App() {
   const [initialDashboard] = useState(readCachedDashboard)
   const [dashboard, setDashboard] = useState(
@@ -172,6 +179,9 @@ function App() {
         const hasLiveMatch = normalizedGames.some(
           (game) => String(game.time_elapsed).toLowerCase() === 'live',
         )
+        const hasPendingMatchUpdate = normalizedGames.some((game) =>
+          shouldPollForMatchUpdate(game, Date.now()),
+        )
 
         setDashboard((current) => ({
           ...current,
@@ -191,10 +201,10 @@ function App() {
           setSelectedTeamId((current) => current || nextMatch.home_team_id)
         }
 
-        if (hasLiveMatch && active) {
+        if ((hasLiveMatch || hasPendingMatchUpdate) && active) {
           gamesRefreshTimer = window.setTimeout(
             () => refreshGames(true),
-            5000,
+            hasLiveMatch ? 5000 : 15000,
           )
         }
       } catch {
@@ -208,7 +218,7 @@ function App() {
           if (keepPollingOnFailure) {
             gamesRefreshTimer = window.setTimeout(
               () => refreshGames(true),
-              5000,
+              15000,
             )
           }
         }
@@ -389,6 +399,7 @@ function App() {
   const knockoutProjection = buildKnockoutProjection(
     groupTableRows,
     predictionRows,
+    dashboard.games,
   )
   const completedGroupMatches = dashboard.games.filter(
     (game) =>
@@ -604,7 +615,6 @@ function App() {
           {page === 'predictions' ? (
             <PredictorSection
               championPick={championPick}
-              knockoutProjection={knockoutProjection}
               predictionMode={predictionMode}
               predictionRows={predictionRows}
             />
