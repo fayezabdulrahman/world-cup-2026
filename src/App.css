@@ -2500,6 +2500,37 @@
   line-height: 1.35;
 }
 
+.hero-live-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: center;
+}
+
+.hero-live-switcher button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.2rem;
+  padding: 0.45rem 0.62rem;
+  border: 1px solid rgba(85, 231, 216, 0.16);
+  border-radius: 999px;
+  background: rgba(5, 13, 32, 0.28);
+  color: var(--text-main);
+  font-size: 0.76rem;
+  cursor: pointer;
+}
+
+.hero-live-switcher button.active {
+  border-color: rgba(104, 237, 163, 0.72);
+  background: rgba(67, 224, 141, 0.13);
+  box-shadow: inset 0 0 0 1px rgba(67, 224, 141, 0.14);
+}
+
+.hero-live-switcher strong {
+  color: var(--accent-warm);
+}
+
 .match-odds {
   display: grid;
   gap: 0.85rem;

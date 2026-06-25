@@ -50,8 +50,11 @@ function HeroSection({
   hideSpoilers = false,
   latestCompletedMatch,
   latestCompletedStadium,
+  liveMatches = [],
   onOpenLatestResult,
+  onSelectLiveMatch,
   onToggleSpoilers,
+  selectedLiveMatchId,
   spotlightImplications,
   spotlightMatch,
   spotlightStadium,
@@ -87,7 +90,11 @@ function HeroSection({
           <div className="hero-highlight-head">
             <div>
               <p className="eyebrow">
-                {isLive ? 'Live spotlight' : 'Next spotlight'}
+                {isLive
+                  ? liveMatches.length > 1
+                    ? `${liveMatches.length} live games`
+                    : 'Live spotlight'
+                  : 'Next spotlight'}
               </p>
               <div className="hero-title-line">
                 <h2>{isLive ? 'Match in play' : 'Up next'}</h2>
@@ -141,6 +148,38 @@ function HeroSection({
             <p className="hero-timer">
               {formatCountDown(spotlightMatch?.date)}
             </p>
+          )}
+
+          {isLive && liveMatches.length > 1 && (
+            <div className="hero-live-switcher" aria-label="Live games">
+              {liveMatches.map((fixture) => {
+                const isSelected = fixture.id === selectedLiveMatchId
+
+                return (
+                  <button
+                    key={fixture.id}
+                    type="button"
+                    className={isSelected ? 'active' : ''}
+                    onClick={() => onSelectLiveMatch?.(fixture)}
+                    aria-pressed={isSelected}
+                  >
+                    <span>
+                      {teamMap[String(fixture.home_team_id)]?.fifa_code ||
+                        fixture.home_team_code}
+                    </span>
+                    <strong>
+                      {hideSpoilers
+                        ? 'Hidden'
+                        : `${fixture.home_score} – ${fixture.away_score}`}
+                    </strong>
+                    <span>
+                      {teamMap[String(fixture.away_team_id)]?.fifa_code ||
+                        fixture.away_team_code}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
           )}
 
           <div className="hero-foot">

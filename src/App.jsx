@@ -98,6 +98,7 @@ function App() {
   const hasDashboardData = useRef(Boolean(initialDashboard))
   const [currentTime, setCurrentTime] = useState(() => Date.now())
   const [selectedMatchId, setSelectedMatchId] = useState('')
+  const [selectedLiveMatchId, setSelectedLiveMatchId] = useState('')
   const [selectedCompletedMatchId, setSelectedCompletedMatchId] = useState('')
   const [selectedTeamId, setSelectedTeamId] = useState('')
   const [page, setPage] = useState(() => {
@@ -338,12 +339,15 @@ function App() {
     upcomingFixtures.find((game) => game.id === selectedMatchId) ||
     upcomingFixtures[0] ||
     null
+  const activeLiveMatches = dashboard.games.filter(
+    (game) =>
+      !completedMatchIds.has(String(game.id)) &&
+      isMatchInPlay(game),
+  )
   const activeLiveMatch =
-    dashboard.games.find(
-      (game) =>
-        !completedMatchIds.has(String(game.id)) &&
-        isMatchInPlay(game),
-    ) || null
+    activeLiveMatches.find((game) => game.id === selectedLiveMatchId) ||
+    activeLiveMatches[0] ||
+    null
   const spotlightMatch = activeLiveMatch || selectedMatch
   const selectedCompletedMatch =
     completedMatches.find((game) => game.id === selectedCompletedMatchId) ||
@@ -482,6 +486,10 @@ function App() {
       ]
     : []
 
+  const handleSelectLiveMatch = (fixture) => {
+    setSelectedLiveMatchId(fixture.id)
+  }
+
   if (page === 'live') {
     return (
       <div className="page-shell">
@@ -493,9 +501,11 @@ function App() {
           hideSpoilers={hideSpoilers}
           implications={activeLiveImplications}
           match={activeLiveMatch}
+          matchOptions={activeLiveMatches}
           onBack={() => {
             window.location.hash = ''
           }}
+          onSelectMatch={handleSelectLiveMatch}
           onToggleSpoilers={setHideSpoilers}
           stadium={stadiumMap[String(activeLiveMatch?.stadium_id)]}
           teamMap={teamMap}
@@ -646,10 +656,13 @@ function App() {
         }
         hideSpoilers={hideSpoilers}
         onOpenLatestResult={handleOpenLatestResult}
+        onSelectLiveMatch={handleSelectLiveMatch}
         onToggleSpoilers={setHideSpoilers}
+        selectedLiveMatchId={activeLiveMatch?.id}
         spotlightImplications={spotlightImplications}
         spotlightMatch={spotlightMatch}
         spotlightStadium={stadiumMap[String(spotlightMatch?.stadium_id)]}
+        liveMatches={activeLiveMatches}
         teamMap={teamMap}
       />
 
