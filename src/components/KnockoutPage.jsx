@@ -20,14 +20,25 @@ function TeamSlot({ entry, status }) {
     )
   }
 
+  const detail =
+    entry.pts === undefined
+      ? entry.qualification
+      : `${entry.qualification} · ${entry.pts} pts · ${signedNumber(entry.gd)} GD`
+
   return (
-    <div className={`bracket-team ${entry.qualification === 'Best third-place' ? 'third-place-slot' : ''}`}>
-      <img src={entry.team.flag} alt="" />
+    <div
+      className={`bracket-team ${entry.qualification === 'Best third-place' ? 'third-place-slot' : ''} ${
+        entry.winner ? 'projected-winner' : ''
+      }`}
+    >
+      {entry.team.flag ? (
+        <img src={entry.team.flag} alt="" />
+      ) : (
+        <span className="bracket-team-flag">{entry.team.fifa_code || ''}</span>
+      )}
       <div>
         <strong>{entry.team.name_en}</strong>
-        <span>
-          {entry.qualification} · {entry.pts} pts · {signedNumber(entry.gd)} GD
-        </span>
+        <span>{detail}</span>
       </div>
       <small>{status}</small>
     </div>
@@ -37,7 +48,9 @@ function TeamSlot({ entry, status }) {
 function KnockoutMatch({ match }) {
   return (
     <article className="bracket-match live-bracket-match">
-      <header>{match.matchNumber ? `Match ${match.matchNumber}` : match.id}</header>
+      <header>
+        {match.matchLabel || (match.matchNumber ? `Match ${match.matchNumber}` : 'Match')}
+      </header>
       <TeamSlot entry={match.teams[0]} status={match.teams[0]?.group || ''} />
       <TeamSlot entry={match.teams[1]} status={match.teams[1]?.group || ''} />
     </article>
@@ -81,11 +94,11 @@ function KnockoutPage({ projection, completedGroupMatches }) {
       <header className="knockout-hero">
         <div>
           <p className="eyebrow">Live qualification picture</p>
-          <h1>Round of 32</h1>
+          <h1>Knockout Map</h1>
           <p className="knockout-intro">
-            The live knockout map only places teams once their Round of 32 spot
-            is confirmed. Open places stay empty until the remaining group
-            results can no longer knock that team out.
+            The live knockout map places teams once their slot is confirmed.
+            Open places stay empty until the fixture feed names the team or the
+            remaining results can no longer knock that team out.
           </p>
         </div>
 
@@ -94,7 +107,7 @@ function KnockoutPage({ projection, completedGroupMatches }) {
           <strong>{confirmedQualifiers.length} of 32</strong>
           <p>
             {hasGroupResults
-              ? 'Updates automatically when completed results make qualification certain.'
+              ? 'Updates automatically when completed results make qualification or advancement certain.'
               : 'No R32 places are confirmed before the group stage starts.'}
           </p>
         </aside>
@@ -125,8 +138,8 @@ function KnockoutPage({ projection, completedGroupMatches }) {
             <p className="eyebrow">Live knockout map</p>
             <h2>Confirmed teams placed into the bracket</h2>
             <p>
-              Direct winner and runner-up slots fill when confirmed. Third-place
-              opponent slots stay TBD until FIFA's allocation is settled.
+              Round slots fill from the live fixture feed. Finished knockout
+              matches promote the official winner as soon as the result lands.
             </p>
           </div>
           <div className="bracket-legend">

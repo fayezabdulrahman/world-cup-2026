@@ -1,5 +1,5 @@
-import { rankGroupRows } from './standings'
-import { numberValue } from './worldCup'
+import { rankGroupRows } from './standings.js'
+import { numberValue } from './worldCup.js'
 
 const OUTCOMES = {
   home: [1, 0],
@@ -122,6 +122,14 @@ const ROUND_OF_32_SLOT_ORDER = [
   },
 ]
 
+const LIVE_ROUND_ORDER = [
+  { type: 'round-of-32', name: 'Round of 32' },
+  { type: 'round-of-16', name: 'Round of 16' },
+  { type: 'quarterfinals', name: 'Quarter-finals' },
+  { type: 'semifinals', name: 'Semi-finals' },
+  { type: 'final', name: 'Final' },
+]
+
 function compareQualificationRows(left, right) {
   return (
     numberValue(right.pts) - numberValue(left.pts) ||
@@ -135,6 +143,23 @@ function compareQualificationRows(left, right) {
 
 function isFinished(game) {
   return String(game.finished).toLowerCase() === 'true'
+}
+
+function isPlaceholderTeamName(value) {
+  return /(winner|loser)$/i.test(String(value || '').trim())
+}
+
+function getMatchWinnerId(game) {
+  if (game.winner_team_id) return String(game.winner_team_id)
+  if (game.home_winner) return String(game.home_team_id)
+  if (game.away_winner) return String(game.away_team_id)
+  if (!isFinished(game)) return ''
+
+  const homeScore = numberValue(game.home_score)
+  const awayScore = numberValue(game.away_score)
+  if (homeScore > awayScore) return String(game.home_team_id)
+  if (awayScore > homeScore) return String(game.away_team_id)
+  return ''
 }
 
 function applyOutcome(games, game, outcome) {
@@ -341,6 +366,70 @@ function getConfirmedThirdPlaceTeam() {
   return null
 }
 
+function makeFixtureTeam(game, side, teamMap) {
+  const prefix = side === 'home' ? 'home' : 'away'
+  const teamId = String(game[`${prefix}_team_id`] || '')
+  const name = game[`${prefix}_team_name_en`]
+
+  if (!teamId || isPlaceholderTeamName(name)) return null
+
+  const team = teamMap[teamId] || {
+    id: teamId,
+    fifa_code: game[`${prefix}_team_code`],
+    flag: game[`${prefix}_team_flag`],
+    name_en: name,
+  }
+  const winnerId = getMatchWinnerId(game)
+
+  return {
+    team,
+    team_id: teamId,
+    qualification:
+      winnerId === teamId
+        ? `Advanced from ${getRoundName(game.type)}`
+        : getRoundName(game.type),
+    group: team.fifa_code || '',
+    winner: winnerId === teamId,
+  }
+}
+
+function getRoundName(type) {
+  return LIVE_ROUND_ORDER.find((round) => round.type === type)?.name || type
+}
+
+function buildActualKnockoutRounds(games, projectedGroups) {
+  const knockoutGames = games.filter((game) =>
+    LIVE_ROUND_ORDER.some((round) => round.type === game.type),
+  )
+
+  if (!knockoutGames.length) return null
+
+  const teamMap = Object.fromEntries(
+    projectedGroups.flatMap((group) =>
+      group.teams.map((entry) => [String(entry.team_id), entry.team]),
+    ),
+  )
+
+  return LIVE_ROUND_ORDER.map((round) => {
+    const roundGames = knockoutGames
+      .filter((game) => game.type === round.type)
+      .sort((left, right) => new Date(left.date) - new Date(right.date))
+
+    return {
+      name: round.name,
+      matches: roundGames.map((game, index) => ({
+        id: String(game.id || `${round.type}-${index}`),
+        matchLabel: `Match ${index + 1}`,
+        teams: [
+          makeFixtureTeam(game, 'home', teamMap),
+          makeFixtureTeam(game, 'away', teamMap),
+        ],
+        winnerTeamId: getMatchWinnerId(game),
+      })),
+    }
+  })
+}
+
 function buildConfirmedRoundOf32(
   projectedGroups,
   confirmedQualifierIds,
@@ -447,6 +536,7 @@ export function buildKnockoutProjection(groupTableRows, predictionRows, games = 
     confirmedQualifierIds,
     thirdPlaceQualifiers,
   )
+  const actualKnockoutRounds = buildActualKnockoutRounds(games, projectedGroups)
   const roundOf32Teams = projectedFirstRoundPairs.flat()
   const roundNames = [
     'Round of 32',
@@ -469,7 +559,7 @@ export function buildKnockoutProjection(groupTableRows, predictionRows, games = 
     confirmedQualifiers: seededTeams.filter((team) =>
       confirmedQualifierIds.has(String(team.team_id)),
     ),
-    confirmedRounds: [confirmedRoundOf32, ...buildEmptyRounds()],
+    confirmedRounds: actualKnockoutRounds || [confirmedRoundOf32, ...buildEmptyRounds()],
     groupQualifiers: projectedGroups.map((group) => ({
       ...group,
       teams: group.teams.slice(0, 2),

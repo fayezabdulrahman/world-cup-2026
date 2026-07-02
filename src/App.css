@@ -1420,6 +1420,18 @@
   object-fit: cover;
 }
 
+.bracket-team-flag {
+  display: grid;
+  width: 1.45rem;
+  height: 1.45rem;
+  place-items: center;
+  border-radius: 6px;
+  background: rgba(85, 231, 216, 0.11);
+  color: var(--accent-cool);
+  font-size: 0.48rem;
+  font-weight: 900;
+}
+
 .bracket-team div {
   min-width: 0;
 }
@@ -1764,6 +1776,11 @@
   }
 
   .bracket-mobile .bracket-team img {
+    width: 1.8rem;
+    height: 1.8rem;
+  }
+
+  .bracket-mobile .bracket-team-flag {
     width: 1.8rem;
     height: 1.8rem;
   }
@@ -2668,6 +2685,27 @@
 .hero-live-stack.is-upcoming {
   align-self: stretch;
   align-content: end;
+}
+
+.hero-foot.is-odds-centered {
+  justify-content: center;
+}
+
+.hero-foot.is-odds-centered .hero-live-stack.is-upcoming {
+  width: min(100%, 58rem);
+  justify-items: center;
+}
+
+.hero-foot.is-odds-centered .match-odds.compact {
+  width: min(100%, 54rem);
+}
+
+.hero-foot.is-odds-centered .match-odds-grid article {
+  padding-block: 0.85rem;
+}
+
+.hero-foot.is-odds-centered .hero-meta {
+  width: min(100%, 54rem);
 }
 
 .hero-foot .hero-meta {

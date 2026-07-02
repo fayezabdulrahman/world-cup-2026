@@ -46,6 +46,33 @@ function getLiveSpotlightSummary(match, hideSpoilers) {
   }
 }
 
+function formatMatchStage(match) {
+  if (!match) return ''
+
+  if (match.type === 'group') {
+    return [
+      match.group ? `Group ${match.group}` : 'Group stage',
+      match.matchday ? `Matchday ${match.matchday}` : '',
+    ]
+      .filter(Boolean)
+      .join(' · ')
+  }
+
+  const knockoutLabels = {
+    'round-of-32': 'Round of 32',
+    'round-of-16': 'Round of 16',
+    'quarterfinal': 'Quarter-final',
+    'quarter-final': 'Quarter-final',
+    semifinal: 'Semi-final',
+    'semi-final': 'Semi-final',
+    final: 'Final',
+    'third-place': 'Third-place play-off',
+    knockout: 'Knockout stage',
+  }
+
+  return knockoutLabels[match.type] || match.type?.replaceAll('-', ' ') || ''
+}
+
 function HeroSection({
   hideSpoilers = false,
   latestCompletedMatch,
@@ -61,6 +88,12 @@ function HeroSection({
   teamMap,
 }) {
   const isLive = isMatchInPlay(spotlightMatch)
+  const hasSpotlightImplications = Boolean(spotlightImplications?.items?.length)
+  const spotlightStage = formatMatchStage(spotlightMatch)
+  const spotlightVenue =
+    spotlightStadium?.fifa_name ||
+    spotlightStadium?.name_en ||
+    spotlightMatch?.stadium_name
   const liveSpotlightSummary = isLive
     ? getLiveSpotlightSummary(spotlightMatch, hideSpoilers)
     : null
@@ -182,7 +215,11 @@ function HeroSection({
             </div>
           )}
 
-          <div className="hero-foot">
+          <div
+            className={`hero-foot${
+              !isLive && !hasSpotlightImplications ? ' is-odds-centered' : ''
+            }`}
+          >
             <div
               className={`hero-live-stack${isLive ? '' : ' is-upcoming'}`}
             >
@@ -197,14 +234,12 @@ function HeroSection({
                 <MatchOdds compact match={spotlightMatch} />
               )}
               <p className="hero-meta">
-                Group {spotlightMatch?.group} · Group matchday{' '}
-                {spotlightMatch?.matchday} ·{' '}
-                {spotlightStadium?.fifa_name ||
-                  spotlightStadium?.name_en ||
-                  spotlightMatch?.stadium_name}
+                {[spotlightStage, spotlightVenue].filter(Boolean).join(' · ')}
               </p>
             </div>
-            <MatchImplicationsCard compact implications={spotlightImplications} />
+            {hasSpotlightImplications && (
+              <MatchImplicationsCard compact implications={spotlightImplications} />
+            )}
           </div>
         </section>
 

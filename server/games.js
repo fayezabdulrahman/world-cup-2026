@@ -52,6 +52,12 @@ function getCompetitor(event, homeAway) {
   )
 }
 
+function getWinnerId(home, away) {
+  if (home?.winner) return home?.team?.id || ''
+  if (away?.winner) return away?.team?.id || ''
+  return ''
+}
+
 function getGroupName(event) {
   if (event.season?.slug !== 'group-stage') return ''
 
@@ -129,6 +135,7 @@ function buildGames(events) {
       const competition = event.competitions?.[0] || {}
       const home = getCompetitor(event, 'home')
       const away = getCompetitor(event, 'away')
+      const winnerId = getWinnerId(home, away)
       const venue = competition.venue || {}
       const city = venue.address?.city || ''
       const group = getGroupName(event)
@@ -156,6 +163,9 @@ function buildGames(events) {
         away_team_flag: away?.team?.logo || '',
         home_team_name_en: home?.team?.displayName || '',
         away_team_name_en: away?.team?.displayName || '',
+        home_winner: Boolean(home?.winner),
+        away_winner: Boolean(away?.winner),
+        winner_team_id: winnerId,
         stadium_id: venue.id || '',
         stadium_name: venue.fullName || event.venue?.displayName || '',
         stadium_city: city,
