@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 import SiteNav from './SiteNav'
 
 function signedNumber(value) {
@@ -80,6 +82,7 @@ function KnockoutRound({ round, roundIndex }) {
 }
 
 function KnockoutPage({ projection, completedGroupMatches }) {
+  const [mobileRound, setMobileRound] = useState(0)
   const { confirmedQualifiers, confirmedRounds } = projection
   const confirmedThirdPlaceQualifiers = confirmedQualifiers.filter(
     (team) => team.qualification === 'Best third-place',
@@ -168,10 +171,10 @@ function KnockoutPage({ projection, completedGroupMatches }) {
           <div className="bracket-round-tabs" role="tablist" aria-label="Knockout round">
             {liveRounds.map((round, roundIndex) => (
               <button
-                aria-selected={roundIndex === 0}
-                className={roundIndex === 0 ? 'active' : ''}
-                disabled={roundIndex !== 0}
+                aria-selected={mobileRound === roundIndex}
+                className={mobileRound === roundIndex ? 'active' : ''}
                 key={round.name}
+                onClick={() => setMobileRound(roundIndex)}
                 role="tab"
                 type="button"
               >
@@ -179,7 +182,7 @@ function KnockoutPage({ projection, completedGroupMatches }) {
               </button>
             ))}
           </div>
-          <KnockoutRound round={liveRounds[0]} roundIndex={0} />
+          <KnockoutRound round={liveRounds[mobileRound]} roundIndex={mobileRound} />
         </div>
       </section>
     </main>
