@@ -123,11 +123,11 @@ const ROUND_OF_32_SLOT_ORDER = [
 ]
 
 const LIVE_ROUND_ORDER = [
-  { type: 'round-of-32', name: 'Round of 32' },
-  { type: 'round-of-16', name: 'Round of 16' },
-  { type: 'quarterfinals', name: 'Quarter-finals' },
-  { type: 'semifinals', name: 'Semi-finals' },
-  { type: 'final', name: 'Final' },
+  { type: 'round-of-32', name: 'Round of 32', matchCount: 16 },
+  { type: 'round-of-16', name: 'Round of 16', matchCount: 8 },
+  { type: 'quarterfinals', name: 'Quarter-finals', matchCount: 4 },
+  { type: 'semifinals', name: 'Semi-finals', matchCount: 2 },
+  { type: 'final', name: 'Final', matchCount: 1 },
 ]
 
 function compareQualificationRows(left, right) {
@@ -397,6 +397,89 @@ function getRoundName(type) {
   return LIVE_ROUND_ORDER.find((round) => round.type === type)?.name || type
 }
 
+function makeFixtureMatch(game, index, round, teamMap) {
+  return {
+    id: String(game.id || `${round.type}-${index}`),
+    sortDate: new Date(game.date).getTime(),
+    sourceMatchNumbers: getPlaceholderSourceMatchNumbers(game),
+    teams: [
+      makeFixtureTeam(game, 'home', teamMap),
+      makeFixtureTeam(game, 'away', teamMap),
+    ],
+    winnerTeamId: getMatchWinnerId(game),
+  }
+}
+
+function getPlaceholderSourceMatchNumbers(game) {
+  return ['home_team_name_en', 'away_team_name_en']
+    .map((key) =>
+      String(game[key] || '').match(
+        /(?:Round of 32|Round of 16|Quarter-?finals?|Semi-?finals?)\s+(\d+)\s+Winner/i,
+      ),
+    )
+    .filter(Boolean)
+    .map((match) => Number(match[1]))
+    .filter((number) => Number.isInteger(number) && number > 0)
+}
+
+function getMatchTeamIds(match) {
+  return new Set(
+    match.teams
+      .map((entry) => entry?.team_id || entry?.team?.id)
+      .filter(Boolean)
+      .map(String),
+  )
+}
+
+function findNextOpenSlot(matches, preferredSlot = 0) {
+  const firstOpenAfterPreferred = matches.findIndex(
+    (match, index) => index >= preferredSlot && !match,
+  )
+  if (firstOpenAfterPreferred !== -1) return firstOpenAfterPreferred
+
+  const firstOpen = matches.findIndex((match) => !match)
+  return firstOpen === -1 ? matches.length : firstOpen
+}
+
+function placeMatchesByPreviousWinners(rawMatches, previousMatches, matchCount) {
+  const placedMatches = Array.from({ length: matchCount }, () => null)
+
+  rawMatches.forEach((match, fallbackIndex) => {
+    const teamIds = getMatchTeamIds(match)
+    const sourceIndices = previousMatches
+      .map((previousMatch, index) =>
+        previousMatch?.winnerTeamId &&
+        teamIds.has(String(previousMatch.winnerTeamId))
+          ? index
+          : -1,
+      )
+      .filter((index) => index !== -1)
+    const placeholderSourceIndices = match.sourceMatchNumbers.map(
+      (matchNumber) => matchNumber - 1,
+    )
+    const allSourceIndices = [...sourceIndices, ...placeholderSourceIndices]
+
+    const preferredSlot = allSourceIndices.length
+      ? Math.floor(Math.min(...allSourceIndices) / 2)
+      : fallbackIndex
+    const targetSlot = placedMatches[preferredSlot]
+      ? findNextOpenSlot(placedMatches, preferredSlot)
+      : preferredSlot
+
+    placedMatches[targetSlot] = match
+  })
+
+  return placedMatches
+}
+
+function makeEmptyFixtureMatch(round, index) {
+  return {
+    id: `${round.type}-${index}`,
+    teams: [],
+    winnerTeamId: '',
+  }
+}
+
 function buildActualKnockoutRounds(games, projectedGroups) {
   const knockoutGames = games.filter((game) =>
     LIVE_ROUND_ORDER.some((round) => round.type === game.type),
@@ -410,22 +493,33 @@ function buildActualKnockoutRounds(games, projectedGroups) {
     ),
   )
 
-  return LIVE_ROUND_ORDER.map((round) => {
+  let previousMatches = []
+
+  return LIVE_ROUND_ORDER.map((round, roundIndex) => {
     const roundGames = knockoutGames
       .filter((game) => game.type === round.type)
       .sort((left, right) => new Date(left.date) - new Date(right.date))
+    const rawMatches = roundGames.map((game, index) =>
+      makeFixtureMatch(game, index, round, teamMap),
+    )
+    const placedMatches =
+      roundIndex === 0
+        ? rawMatches
+        : placeMatchesByPreviousWinners(
+            rawMatches,
+            previousMatches,
+            round.matchCount,
+          )
+    const matches = placedMatches.map((match, index) => ({
+      ...(match || makeEmptyFixtureMatch(round, index)),
+      matchLabel: `Match ${index + 1}`,
+    }))
+
+    previousMatches = matches
 
     return {
       name: round.name,
-      matches: roundGames.map((game, index) => ({
-        id: String(game.id || `${round.type}-${index}`),
-        matchLabel: `Match ${index + 1}`,
-        teams: [
-          makeFixtureTeam(game, 'home', teamMap),
-          makeFixtureTeam(game, 'away', teamMap),
-        ],
-        winnerTeamId: getMatchWinnerId(game),
-      })),
+      matches,
     }
   })
 }

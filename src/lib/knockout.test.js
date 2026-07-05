@@ -117,3 +117,88 @@ test('live knockout rounds use actual fixtures and official winners', () => {
     'Advanced from Round of 32',
   )
 })
+
+test('later knockout fixtures keep the visual lane of the previous round winner', () => {
+  const featuredTeams = [
+    team('1', 'Morocco', 'MAR'),
+    team('2', 'Brazil', 'BRA'),
+    team('3', 'Norway', 'NOR'),
+    team('4', 'Mexico', 'MEX'),
+    team('5', 'England', 'ENG'),
+    team('6', 'Portugal', 'POR'),
+    team('7', 'Spain', 'ESP'),
+  ]
+  const groupTableRows = 'ABCDEFGHIJKL'.split('').map((name, groupIndex) => ({
+    name,
+    teams:
+      groupIndex === 0
+        ? featuredTeams
+        : Array.from({ length: 4 }, (_, teamIndex) => {
+            const id = `${groupIndex + 1}${teamIndex + 1}`
+            return team(id, `Team ${name}${teamIndex + 1}`, `T${id}`)
+          }),
+  }))
+  const predictionRows = groupTableRows.flatMap((group) => group.teams).map((entry) => ({
+    team: entry.team,
+    fifaRank: 1,
+    strengthRating: 1,
+  }))
+  const games = [
+    match(
+      1,
+      'round-of-16',
+      { id: '1', name: 'Morocco', code: 'MAR' },
+      { id: '', name: 'Round of 32 2 Winner', code: '' },
+    ),
+    match(
+      2,
+      'round-of-16',
+      { id: '', name: 'Round of 32 3 Winner', code: '' },
+      { id: '', name: 'Round of 32 4 Winner', code: '' },
+    ),
+    match(
+      3,
+      'round-of-16',
+      { id: '2', name: 'Brazil', code: 'BRA' },
+      { id: '3', name: 'Norway', code: 'NOR' },
+      {
+        finished: 'TRUE',
+        home_score: '1',
+        away_score: '2',
+        away_winner: true,
+        winner_team_id: '3',
+      },
+    ),
+    match(
+      4,
+      'round-of-16',
+      { id: '4', name: 'Mexico', code: 'MEX' },
+      { id: '5', name: 'England', code: 'ENG' },
+    ),
+    match(
+      5,
+      'quarterfinals',
+      { id: '6', name: 'Round of 16 5 Winner', code: 'RD16 W5' },
+      { id: '7', name: 'Round of 16 6 Winner', code: 'RD16 W6' },
+    ),
+    match(
+      6,
+      'quarterfinals',
+      { id: '3', name: 'Norway', code: 'NOR' },
+      { id: '', name: 'Round of 16 4 Winner', code: '' },
+    ),
+  ]
+
+  const projection = buildKnockoutProjection(groupTableRows, predictionRows, games)
+  const quarterFinals = projection.confirmedRounds.find(
+    (round) => round.name === 'Quarter-finals',
+  )
+
+  assert.equal(quarterFinals.matches[1].matchLabel, 'Match 2')
+  assert.equal(quarterFinals.matches[1].teams[0].team.name_en, 'Norway')
+  assert.equal(quarterFinals.matches[2].matchLabel, 'Match 3')
+  assert.deepEqual(
+    quarterFinals.matches[2].teams.map((entry) => entry?.team?.name_en || 'TBD'),
+    ['TBD', 'TBD'],
+  )
+})
