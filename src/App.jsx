@@ -307,6 +307,16 @@ function App() {
     window.location.hash = 'results'
   }
 
+  const handleOpenPlayerMatch = (fixture) => {
+    if (String(fixture.finished).toLowerCase() === 'true') {
+      handleOpenLatestResult(fixture)
+      return
+    }
+
+    setSelectedLiveMatchId(fixture.id)
+    window.location.hash = 'live'
+  }
+
   const handleOpenWatchMatch = (fixture) => {
     handleSelectMatch(fixture)
     window.location.hash = 'overview'
@@ -596,6 +606,7 @@ function App() {
         <div className="ambient ambient-right" />
         <PlayerWatchlistPage
           games={dashboard.games}
+          onOpenResult={handleOpenPlayerMatch}
           squads={fifaConfirmedSquads.squads}
           teams={dashboard.teams}
         />

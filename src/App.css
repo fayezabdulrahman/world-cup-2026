@@ -1121,6 +1121,83 @@
   font-size: 0.72rem;
 }
 
+.player-goal-log {
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(4, 12, 31, 0.3);
+}
+
+.player-goal-log summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.48rem 0.56rem;
+  color: var(--text-soft);
+  font-size: 0.7rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.player-goal-log summary::-webkit-details-marker {
+  display: none;
+}
+
+.player-goal-log summary span {
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.player-goal-log summary strong {
+  color: var(--accent-warm);
+  font-size: 0.76rem;
+}
+
+.player-goal-log > div {
+  display: grid;
+  max-height: 12rem;
+  overflow: auto;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.player-goal-log button {
+  display: grid;
+  grid-template-columns: minmax(3.5rem, auto) minmax(0, 1fr);
+  gap: 0.1rem 0.5rem;
+  width: 100%;
+  padding: 0.46rem 0.56rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.player-goal-log button + button {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.player-goal-log button span {
+  color: var(--accent-warm);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.player-goal-log button strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-main);
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.player-goal-log button small {
+  grid-column: 2;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}
+
 .knockout-page {
   max-width: 1440px;
 }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  formatCountDown,
+  formatUpcomingKickoffLabel,
   formatViewerTime,
   getViewerTimeZoneLabel,
   isMatchInPlay,
@@ -96,7 +96,7 @@ function CompactFixtureRow({
     ? 'Spoiler-free'
     : isLive
     ? getCompactLiveMeta(fixture)
-    : formatCountDown(fixture.date)
+    : formatUpcomingKickoffLabel(fixture.date)
 
   return (
     <button
@@ -274,7 +274,7 @@ function FixturesSection({
             <section className="compact-fixture-group">
               <div className="compact-fixture-heading">
                 <strong>Up next</strong>
-                <span>{formatCountDown(laterFixtures[0].date)}</span>
+                <span>{formatUpcomingKickoffLabel(laterFixtures[0].date)}</span>
               </div>
               <div className="compact-fixture-list">
                 {laterFixtures.map((fixture) => (
@@ -422,12 +422,14 @@ function FixturesSection({
                   <small>{selectedStadium?.region || 'Host region'}</small>
                 </article>
                 <article>
-                  <span>Countdown</span>
-                  <strong>{formatCountDown(selectedMatch.date)}</strong>
+                  <span>{isToday(selectedMatch.date) ? 'Countdown' : 'Kickoff date'}</span>
+                  <strong>{formatUpcomingKickoffLabel(selectedMatch.date)}</strong>
                   <small>
                     {selectedMatchIsLive
                       ? 'Currently in play'
-                      : 'From now to kickoff'}
+                      : isToday(selectedMatch.date)
+                        ? 'From now to kickoff'
+                        : 'Local fixture date'}
                   </small>
                 </article>
               </div>

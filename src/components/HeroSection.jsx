@@ -1,5 +1,5 @@
 import {
-  formatCountDown,
+  formatUpcomingKickoffLabel,
   isMatchInPlay,
 } from '../lib/worldCup'
 import MatchImplicationsCard from './MatchImplicationsCard'
@@ -179,7 +179,7 @@ function HeroSection({
 
           {!isLive && (
             <p className="hero-timer">
-              {formatCountDown(spotlightMatch?.date)}
+              {formatUpcomingKickoffLabel(spotlightMatch?.date)}
             </p>
           )}
 

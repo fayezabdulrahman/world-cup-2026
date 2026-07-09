@@ -46,6 +46,14 @@ function getEventMinute(event) {
   return Number.isFinite(minute) ? minute : 0
 }
 
+function formatGoalMinute(event) {
+  const displayValue = event?.clock?.displayValue || event?.displayTime
+  if (displayValue) return displayValue
+
+  const minute = getEventMinute(event)
+  return minute ? `${minute}'` : 'Goal'
+}
+
 function getMatchDuration(summary) {
   const eventMinutes = (summary?.keyEvents || []).map(getEventMinute)
   const maxEventMinute = Math.max(90, ...eventMinutes)
@@ -107,6 +115,82 @@ function matchesPlayer(localPlayer, rosterPlayer) {
   )
 }
 
+function eventBelongsToPlayerTeam(event, player) {
+  const teamId = String(event?.team?.id || event?.teamId || '')
+  const teamNames = [
+    event?.team?.displayName,
+    event?.team?.name,
+    event?.team?.shortDisplayName,
+  ]
+    .map(normalizeName)
+    .filter(Boolean)
+
+  if (teamId && teamId === String(player.team?.id)) return true
+  return teamNames.some(
+    (teamName) =>
+      teamName === normalizeName(player.teamName) ||
+      teamName === normalizeName(player.teamCode),
+  )
+}
+
+function eventMatchesPlayer(player, event) {
+  const playerNames = [
+    player.displayName,
+    player.fullName,
+    player.shirtName,
+    player.playerName,
+  ]
+    .map(normalizeName)
+    .filter(Boolean)
+  const participants = [
+    ...(event?.participants || []),
+    ...(event?.athletes || []).map((athlete) => ({ athlete })),
+  ]
+  const eventNames = participants
+    .flatMap((participant) => [
+      participant?.displayName,
+      participant?.athlete?.displayName,
+      participant?.athlete?.fullName,
+      participant?.athlete?.shortName,
+    ])
+    .map(normalizeName)
+    .filter(Boolean)
+
+  if (!eventNames.length) {
+    const eventText = normalizeName(event?.shortText || event?.text)
+    return playerNames.some((playerName) => eventText.includes(playerName))
+  }
+
+  return eventNames.some((eventName) =>
+    playerNames.some(
+      (playerName) =>
+        eventName === playerName ||
+        eventName.includes(playerName) ||
+        playerName.includes(eventName),
+    ),
+  )
+}
+
+function getOpponentLabel(player, match) {
+  const opponent = getOpponent(player, match)
+  return opponent?.code || opponent?.name || 'opponent'
+}
+
+function getPlayerGoalEvents(player, summary, match) {
+  return (summary?.keyEvents || [])
+    .filter((event) => event.type?.type === 'goal' || event.scoringPlay)
+    .filter((event) => eventBelongsToPlayerTeam(event, player))
+    .filter((event) => eventMatchesPlayer(player, event))
+    .map((event) => ({
+      id: `${match.id}-${event.id || event.clock?.value || event.shortText}`,
+      label: `${formatGoalMinute(event)} goal`,
+      match,
+      minute: getEventMinute(event),
+      opponent: getOpponentLabel(player, match),
+    }))
+    .sort((left, right) => left.minute - right.minute)
+}
+
 function summarizePlayerMatches(player, summariesByMatchId, games) {
   return games.reduce(
     (summary, match) => {
@@ -120,7 +204,11 @@ function summarizePlayerMatches(player, summariesByMatchId, games) {
       const stats = rosterPlayer.stats || []
       const yellowCards = getStatValue(stats, 'yellowCards')
       const redCards = getStatValue(stats, 'redCards')
-      const goals = getStatValue(stats, 'totalGoals') + getStatValue(stats, 'ownGoals')
+      const goals = getStatValue(stats, 'totalGoals')
+      const goalEvents = getPlayerGoalEvents(player, matchSummary, match).slice(
+        0,
+        goals,
+      )
 
       summary.appearances += getStatValue(stats, 'appearances') || 1
       summary.goals += goals
@@ -134,12 +222,23 @@ function summarizePlayerMatches(player, summariesByMatchId, games) {
       summary.foulsSuffered += getStatValue(stats, 'foulsSuffered')
       summary.saves += getStatValue(stats, 'saves')
       summary.offsides += getStatValue(stats, 'offsides')
+      summary.goalEvents.push(
+        ...goalEvents,
+        ...Array.from({
+          length: Math.max(0, goals - goalEvents.length),
+        }).map((_, index) => ({
+          id: `${match.id}-${rosterPlayer.athlete?.id}-goal-${index}`,
+          label: 'Goal',
+          match,
+          minute: 0,
+          opponent: getOpponentLabel(player, match),
+        })),
+      )
 
-      if (goals || yellowCards || redCards) {
+      if (yellowCards || redCards) {
         summary.recentEvents.push({
           id: `${match.id}-${rosterPlayer.athlete?.id}`,
           label: [
-            goals ? `${goals} goal${goals === 1 ? '' : 's'}` : '',
             yellowCards ? `${yellowCards} yellow` : '',
             redCards ? `${redCards} red` : '',
           ]
@@ -155,6 +254,7 @@ function summarizePlayerMatches(player, summariesByMatchId, games) {
       appearances: 0,
       assists: 0,
       goals: 0,
+      goalEvents: [],
       minutes: 0,
       foulsCommitted: 0,
       foulsSuffered: 0,
@@ -219,7 +319,7 @@ function getSecondaryStats(player, stats) {
   return baseStats
 }
 
-function PlayerWatchlistPage({ games, squads, teams }) {
+function PlayerWatchlistPage({ games, onOpenResult, squads, teams }) {
   const [followedPlayerIds, setFollowedPlayerIds] = useState(readWatchlist)
   const [query, setQuery] = useState('')
   const [summariesByMatchId, setSummariesByMatchId] = useState({})
@@ -498,13 +598,43 @@ function PlayerWatchlistPage({ games, squads, teams }) {
                   </div>
                   {stats.recentEvents.length > 0 && (
                     <div className="player-recent-events">
-                      {stats.recentEvents.slice(-2).map((event) => (
+                      {stats.recentEvents.map((event) => (
                         <small key={event.id}>
                           {event.label} · {event.match.home_team_code} vs{' '}
                           {event.match.away_team_code}
                         </small>
                       ))}
                     </div>
+                  )}
+                  {stats.goalEvents.length > 0 && (
+                    <details className="player-goal-log">
+                      <summary>
+                        <span>Goal log</span>
+                        <strong>
+                          {stats.goalEvents.length}{' '}
+                          {stats.goalEvents.length === 1 ? 'goal' : 'goals'}
+                        </strong>
+                      </summary>
+                      <div>
+                        {stats.goalEvents.map((goal) => (
+                          <button
+                            key={goal.id}
+                            type="button"
+                            onClick={() => onOpenResult?.(goal.match)}
+                          >
+                            <span>{goal.label}</span>
+                            <strong>
+                              vs {goal.opponent}
+                            </strong>
+                            <small>
+                              {goal.match.home_team_code} {goal.match.home_score}
+                              {' - '}
+                              {goal.match.away_score} {goal.match.away_team_code}
+                            </small>
+                          </button>
+                        ))}
+                      </div>
+                    </details>
                   )}
                 </article>
               )

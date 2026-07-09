@@ -175,6 +175,16 @@ export function formatViewerTime(date) {
   }).format(date)
 }
 
+export function formatViewerDate(date) {
+  if (!date) return 'TBD'
+
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  }).format(date)
+}
+
 export function getViewerTimeZoneLabel() {
   const formatter = new Intl.DateTimeFormat(undefined, {
     timeZoneName: 'short',
@@ -203,6 +213,22 @@ export function formatCountDown(date) {
   if (hours > 0) return `${hours}h ${minutes}m to kickoff`
 
   return `${minutes}m to kickoff`
+}
+
+export function formatUpcomingKickoffLabel(date) {
+  if (!date) return 'Awaiting confirmation'
+
+  const now = new Date()
+  const diff = date.getTime() - now.getTime()
+
+  if (diff <= 0) return 'Match In Play'
+
+  const isToday =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+
+  return isToday ? formatCountDown(date) : formatViewerDate(date)
 }
 
 export function isMatchInPlay(match) {
