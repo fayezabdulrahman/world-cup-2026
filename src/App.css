@@ -2976,6 +2976,42 @@
   padding: 1rem;
 }
 
+.past-fixture-search {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.85rem 0;
+}
+
+.past-fixture-search span {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.past-fixture-search input {
+  width: 100%;
+  min-height: 2.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.16);
+  color: var(--text-main);
+  font: inherit;
+  outline: 0;
+  padding: 0.75rem 0.9rem;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.past-fixture-search input::placeholder {
+  color: var(--text-muted);
+}
+
+.past-fixture-search input:focus {
+  border-color: rgba(85, 231, 216, 0.58);
+  box-shadow: 0 0 0 3px rgba(85, 231, 216, 0.12);
+}
+
 .compact-past-fixture-list {
   max-height: 23rem;
   overflow-x: hidden;
@@ -3091,6 +3127,13 @@
   font-size: 1rem;
 }
 
+.past-fixture-empty {
+  margin: 0;
+  padding: 1.25rem;
+  color: var(--text-soft);
+  font-size: 0.9rem;
+}
+
 .status-pill {
   display: inline-flex;
   align-items: center;
@@ -3164,6 +3207,112 @@
   color: #68eda3;
   text-transform: uppercase;
   letter-spacing: 0.12em;
+}
+
+.penalty-shootout {
+  display: grid;
+  gap: 1rem;
+  margin: 0 0 1.5rem;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.penalty-shootout-head,
+.penalty-shootout-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.penalty-shootout-head {
+  align-items: end;
+}
+
+.penalty-shootout-head strong {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 1.1rem;
+}
+
+.penalty-shootout-head > span {
+  justify-self: end;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.penalty-shootout-grid article {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.penalty-shootout-grid h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.penalty-attempts {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.penalty-attempts li {
+  display: grid;
+  grid-template-columns: 1.8rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.25rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.penalty-attempts li > span {
+  display: grid;
+  place-items: center;
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.penalty-attempts strong {
+  overflow: hidden;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.penalty-attempts small {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.penalty-attempts .scored small {
+  color: #68eda3;
+}
+
+.penalty-attempts .missed small {
+  color: #ff8f9b;
+}
+
+.penalty-empty {
+  margin: 0;
+  color: var(--text-muted);
 }
 
 .match-venue-line {
@@ -5692,6 +5841,19 @@
 
   .live-score strong {
     font-size: 4rem;
+  }
+
+  .penalty-shootout-head,
+  .penalty-shootout-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .penalty-shootout-head > span {
+    justify-self: start;
+  }
+
+  .penalty-attempts li {
+    grid-template-columns: 1.7rem minmax(0, 1fr) 4.5rem;
   }
 
   .match-venue-line {

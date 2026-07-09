@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { findMatchEvent, getScoreboardDateRange } from '../lib/espn'
+import { getPenaltyResult } from '../lib/penalties'
 
 const ESPN_BASE = '/api/espn'
 const SUMMARY_STATS = [
@@ -151,6 +152,17 @@ function RecentResultSection({
   const awayStats = getTeamStats(
     summary?.boxscore?.teams?.find((team) => team.homeAway === 'away'),
   )
+  const competition = summary?.header?.competitions?.[0]
+  const penaltyResult = getPenaltyResult({
+    awayCompetitor: competition?.competitors?.find(
+      (team) => team.homeAway === 'away',
+    ),
+    homeCompetitor: competition?.competitors?.find(
+      (team) => team.homeAway === 'home',
+    ),
+    match,
+    summary,
+  })
   const goalScorers = hideSpoilers ? [] : getGoalScorers(summary, match)
   const homeScorers = goalScorers.filter((goal) => goal.side === 'home')
   const awayScorers = goalScorers.filter((goal) => goal.side === 'away')
@@ -188,11 +200,17 @@ function RecentResultSection({
         </article>
         <div className="result-score">
           <strong>
-            {hideSpoilers ? 'Hidden' : `${match.home_score} – ${match.away_score}`}
+            {hideSpoilers
+              ? 'Hidden'
+              : penaltyResult
+                ? `${penaltyResult.homeScore} – ${penaltyResult.awayScore} Penalties`
+                : `${match.home_score} – ${match.away_score}`}
           </strong>
           <span className="result-meta">
             {hideSpoilers
               ? 'Score hidden until you turn spoiler-free mode off'
+              : penaltyResult
+                ? `FT ${match.home_score}-${match.away_score} · ${stadium?.fifa_name || match.stadium_name}`
               : `Group ${match.group} · ${stadium?.fifa_name || match.stadium_name}`}
           </span>
         </div>

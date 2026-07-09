@@ -155,6 +155,10 @@ function buildGames(events) {
         away_team_id: away?.team?.id || '',
         home_score: home?.score || '0',
         away_score: away?.score || '0',
+        home_penalty_score:
+          home?.shootoutScore === undefined ? '' : String(home.shootoutScore),
+        away_penalty_score:
+          away?.shootoutScore === undefined ? '' : String(away.shootoutScore),
         home_conduct_score: getConductScore(competition.details, home?.team?.id),
         away_conduct_score: getConductScore(competition.details, away?.team?.id),
         home_team_code: home?.team?.abbreviation || '',

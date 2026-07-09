@@ -11,6 +11,7 @@ import {
   numberValue,
 } from '../lib/worldCup'
 import { findMatchEvent, getScoreboardDateRange } from '../lib/espn'
+import { formatPenaltyScore, getPenaltyResult } from '../lib/penalties'
 import MatchImplicationsCard from './MatchImplicationsCard'
 import MatchOdds from './MatchOdds'
 import SiteNav from './SiteNav'
@@ -26,6 +27,92 @@ function formatResultDate(date) {
     month: 'short',
     day: 'numeric',
   }).format(date)
+}
+
+function formatMatchStage(match) {
+  if (match?.group) {
+    return `Group stage · Group ${match.group} · Matchday ${match.matchday}`
+  }
+
+  const type = String(match?.type || '')
+    .split('-')
+    .filter(Boolean)
+    .map((part, index) =>
+      index > 0 && ['of'].includes(part)
+        ? part
+        : part.charAt(0).toUpperCase() + part.slice(1),
+    )
+    .join(' ')
+
+  return type || 'Knockout match'
+}
+
+function normalizeSearchText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[–—]/g, '-')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+}
+
+function buildFixtureSearchText(fixture, teamMap) {
+  const home = teamMap[String(fixture.home_team_id)]
+  const away = teamMap[String(fixture.away_team_id)]
+  const score = `${fixture.home_score}-${fixture.away_score}`
+  const reversedScore = `${fixture.away_score}-${fixture.home_score}`
+  const scoreText = `${score} ${score.replace('-', ' ')} ${reversedScore} ${reversedScore.replace('-', ' ')}`
+  const penaltyScore = formatPenaltyScore(fixture) || ''
+  const date = fixture.date
+
+  return normalizeSearchText(
+    [
+      fixture.home_team_name_en,
+      fixture.away_team_name_en,
+      fixture.home_team_code,
+      fixture.away_team_code,
+      home?.name_en,
+      away?.name_en,
+      home?.fifa_code,
+      away?.fifa_code,
+      fixture.group ? `Group ${fixture.group}` : '',
+      fixture.matchday ? `Matchday ${fixture.matchday}` : '',
+      fixture.type,
+      formatMatchStage(fixture),
+      fixture.stadium_name,
+      fixture.stadium_city,
+      fixture.local_date,
+      date ? formatResultDate(date) : '',
+      date ? formatViewerTime(date) : '',
+      scoreText,
+      penaltyScore,
+    ].join(' '),
+  )
+}
+
+function getSearchScorePairs(value) {
+  const text = String(value || '').replace(/[–—]/g, '-')
+  const dashedScores = [...text.matchAll(/(?:^|\s)(\d+)\s*-\s*(\d+)(?:\s|$)/g)].map(
+    (match) => [match[1], match[2]],
+  )
+
+  if (dashedScores.length) return dashedScores
+
+  const normalized = normalizeSearchText(text)
+  if (/^\d+\s+\d+$/.test(normalized)) {
+    return [normalized.split(/\s+/)]
+  }
+
+  return []
+}
+
+function fixtureMatchesScorePair(fixture, [left, right]) {
+  const homeScore = String(fixture.home_score ?? '')
+  const awayScore = String(fixture.away_score ?? '')
+
+  return (
+    (homeScore === left && awayScore === right) ||
+    (homeScore === right && awayScore === left)
+  )
 }
 
 const DISPLAY_STATS = [
@@ -191,6 +278,27 @@ function getTimelineEmoji(event) {
   return '•'
 }
 
+function PenaltyAttemptList({ attempts, teamName }) {
+  if (!attempts.length) {
+    return <p className="penalty-empty">Attempt details unavailable.</p>
+  }
+
+  return (
+    <ol className="penalty-attempts" aria-label={`${teamName} penalties`}>
+      {attempts.map((attempt) => (
+        <li
+          key={attempt.id || `${teamName}-${attempt.shotNumber}`}
+          className={attempt.didScore ? 'scored' : 'missed'}
+        >
+          <span>{attempt.shotNumber}</span>
+          <strong>{attempt.player || 'Unknown taker'}</strong>
+          <small>{attempt.didScore ? 'Scored' : 'Missed'}</small>
+        </li>
+      ))}
+    </ol>
+  )
+}
+
 function LiveLineup({ roster }) {
   const starters = (roster?.roster || [])
     .filter((player) => player.starter)
@@ -326,6 +434,7 @@ function LiveMatchPage({
   const [timeline, setTimeline] = useState([])
   const [lastUpdated, setLastUpdated] = useState(null)
   const [feedError, setFeedError] = useState(false)
+  const [fixtureSearch, setFixtureSearch] = useState('')
   const selectedMatchRef = useRef(null)
   const timelineEventRefs = useRef(new Map())
   const matchEventId = match?.espn_event_id || ''
@@ -429,6 +538,16 @@ function LiveMatchPage({
       ...score,
     }
   }, [liveAway?.score, liveHome?.score, match])
+  const penaltyResult = useMemo(
+    () =>
+      getPenaltyResult({
+        awayCompetitor: liveAway,
+        homeCompetitor: liveHome,
+        match: effectiveMatch,
+        summary: liveSummary,
+      }),
+    [effectiveMatch, liveAway, liveHome, liveSummary],
+  )
   const matchGroup = groups.find((group) => group.name === match?.group)
   const liveStandings = useMemo(
     () =>
@@ -442,6 +561,27 @@ function LiveMatchPage({
     [effectiveMatch, hideSpoilers, matchGroup, teamMap],
   )
   const viewerTimeZone = getViewerTimeZoneLabel()
+  const normalizedFixtureSearch = normalizeSearchText(fixtureSearch)
+  const searchScorePairs = useMemo(
+    () => getSearchScorePairs(fixtureSearch),
+    [fixtureSearch],
+  )
+  const filteredMatchOptions = useMemo(() => {
+    if (!normalizedFixtureSearch) return matchOptions
+
+    const searchTerms = normalizedFixtureSearch.split(/\s+/).filter(Boolean)
+    return matchOptions.filter((fixture) => {
+      if (
+        searchScorePairs.length &&
+        !searchScorePairs.every((pair) => fixtureMatchesScorePair(fixture, pair))
+      ) {
+        return false
+      }
+
+      const searchText = buildFixtureSearchText(fixture, teamMap)
+      return searchTerms.every((term) => searchText.includes(term))
+    })
+  }, [matchOptions, normalizedFixtureSearch, searchScorePairs, teamMap])
   const displayedTimeline = useMemo(() => [...timeline].reverse(), [timeline])
   const goalEvents = useMemo(
     () =>
@@ -521,6 +661,17 @@ function LiveMatchPage({
       }),
     [awayTeam?.fifa_code, effectiveMatch, homeTeam?.fifa_code, matchMinute, stats],
   )
+  const homeScoreDisplay = penaltyResult
+    ? penaltyResult.homeScore
+    : effectiveMatch.home_score
+  const awayScoreDisplay = penaltyResult
+    ? penaltyResult.awayScore
+    : effectiveMatch.away_score
+  const penaltyWinnerName = penaltyResult
+    ? Number(penaltyResult.homeScore) > Number(penaltyResult.awayScore)
+      ? match.home_team_name_en
+      : match.away_team_name_en
+    : ''
 
   if (!match) {
     return (
@@ -564,15 +715,27 @@ function LiveMatchPage({
               <p className="eyebrow">Past fixtures</p>
               <h1>Completed matches</h1>
             </div>
-            <span>{matchOptions.length} results</span>
+            <span>
+              {filteredMatchOptions.length}
+              {normalizedFixtureSearch ? ` of ${matchOptions.length}` : ''} results
+            </span>
           </div>
+          <label className="past-fixture-search">
+            <span>Search completed matches</span>
+            <input
+              type="search"
+              value={fixtureSearch}
+              onChange={(event) => setFixtureSearch(event.target.value)}
+              placeholder="Team, score, group, venue..."
+            />
+          </label>
           <div
             className="compact-past-fixture-list"
             role="region"
             aria-label="Completed match results"
             tabIndex="0"
           >
-            {matchOptions.map((fixture) => {
+            {filteredMatchOptions.map((fixture) => {
               const fixtureHome = teamMap[String(fixture.home_team_id)]
               const fixtureAway = teamMap[String(fixture.away_team_id)]
 
@@ -586,7 +749,11 @@ function LiveMatchPage({
                 >
                   <span className="compact-past-date">
                     <strong>{formatResultDate(fixture.date)}</strong>
-                    <small>Matchday {fixture.matchday || 'TBD'}</small>
+                    <small>
+                      {fixture.matchday
+                        ? `Matchday ${fixture.matchday}`
+                        : formatMatchStage(fixture)}
+                    </small>
                   </span>
                   <span className="compact-past-teams">
                     <span>
@@ -610,13 +777,27 @@ function LiveMatchPage({
                     <strong>
                       {hideSpoilers
                         ? 'Hidden'
-                        : `${fixture.home_score} – ${fixture.away_score}`}
+                        : formatPenaltyScore(fixture) ||
+                          `${fixture.home_score} – ${fixture.away_score}`}
                     </strong>
-                    <small>{hideSpoilers ? 'Spoiler-free' : `Group ${fixture.group}`}</small>
+                    <small>
+                      {hideSpoilers
+                        ? 'Spoiler-free'
+                        : formatPenaltyScore(fixture)
+                          ? `FT ${fixture.home_score}-${fixture.away_score}`
+                          : fixture.group
+                            ? `Group ${fixture.group}`
+                            : formatMatchStage(fixture)}
+                    </small>
                   </span>
                 </button>
               )
             })}
+            {!filteredMatchOptions.length && (
+              <p className="past-fixture-empty">
+                No completed matches match that search.
+              </p>
+            )}
           </div>
         </section>
       )}
@@ -648,9 +829,7 @@ function LiveMatchPage({
         <div className="live-title-row">
           <div>
             {/* <p className="eyebrow">FIFA World Cup 2026</p> */}
-            <strong>
-              Group stage · Group {match.group} · Matchday {match.matchday}
-            </strong>
+            <strong>{formatMatchStage(match)}</strong>
           </div>
           <span className={isLive ? 'status-pill live' : 'status-pill'}>
             {readableStatus || formatViewerTime(match.date)}
@@ -665,12 +844,14 @@ function LiveMatchPage({
           </article>
 
           <div className="live-score">
-            <strong>{hideSpoilers ? '–' : effectiveMatch.home_score}</strong>
+            <strong>{hideSpoilers ? '–' : homeScoreDisplay}</strong>
             <span>–</span>
-            <strong>{hideSpoilers ? '–' : effectiveMatch.away_score}</strong>
+            <strong>{hideSpoilers ? '–' : awayScoreDisplay}</strong>
             <small>
               {hideSpoilers
                 ? 'Score hidden'
+                : penaltyResult
+                  ? `Penalties · FT ${effectiveMatch.home_score}-${effectiveMatch.away_score}`
                 : isLive && !isBreak && liveStatus?.displayClock
                 ? `${liveStatus.displayClock} · live clock`
                 : !isLive
@@ -685,6 +866,39 @@ function LiveMatchPage({
             <span>{awayTeam?.fifa_code}</span>
           </article>
         </div>
+
+        {!hideSpoilers && penaltyResult && (
+          <div className="penalty-shootout">
+            <div className="penalty-shootout-head">
+              <div>
+                <p className="eyebrow">Penalty shootout</p>
+                <strong>
+                  {penaltyWinnerName} won {penaltyResult.homeScore}-
+                  {penaltyResult.awayScore}
+                </strong>
+              </div>
+              <span>
+                After {effectiveMatch.home_score}-{effectiveMatch.away_score} AET
+              </span>
+            </div>
+            <div className="penalty-shootout-grid">
+              <article>
+                <h3>{match.home_team_name_en}</h3>
+                <PenaltyAttemptList
+                  attempts={penaltyResult.homeShots}
+                  teamName={match.home_team_name_en}
+                />
+              </article>
+              <article>
+                <h3>{match.away_team_name_en}</h3>
+                <PenaltyAttemptList
+                  attempts={penaltyResult.awayShots}
+                  teamName={match.away_team_name_en}
+                />
+              </article>
+            </div>
+          </div>
+        )}
 
         <div className="match-venue-line">
           <span>{stadium?.fifa_name || stadium?.name_en}</span>

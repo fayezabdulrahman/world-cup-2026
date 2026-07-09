@@ -609,7 +609,7 @@ function PlayerWatchlistPage({ games, onOpenResult, squads, teams }) {
                   {stats.goalEvents.length > 0 && (
                     <details className="player-goal-log">
                       <summary>
-                        <span>Goal log</span>
+                        <span>Goals</span>
                         <strong>
                           {stats.goalEvents.length}{' '}
                           {stats.goalEvents.length === 1 ? 'goal' : 'goals'}
