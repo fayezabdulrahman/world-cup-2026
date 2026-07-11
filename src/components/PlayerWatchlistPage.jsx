@@ -29,6 +29,24 @@ function normalizeName(value) {
     .trim()
 }
 
+function namesMatch(left, right) {
+  const normalizedLeft = normalizeName(left)
+  const normalizedRight = normalizeName(right)
+
+  if (!normalizedLeft || !normalizedRight) return false
+  if (
+    normalizedLeft === normalizedRight ||
+    normalizedLeft.includes(normalizedRight) ||
+    normalizedRight.includes(normalizedLeft)
+  ) {
+    return true
+  }
+
+  const leftTokens = normalizedLeft.split(' ').sort().join(' ')
+  const rightTokens = normalizedRight.split(' ').sort().join(' ')
+  return leftTokens === rightTokens
+}
+
 function getPlayerId(player, squad) {
   return `${squad.fifaCode}-${player.number}-${normalizeName(player.playerName)}`
 }
@@ -106,12 +124,7 @@ function matchesPlayer(localPlayer, rosterPlayer) {
     .filter(Boolean)
 
   return athleteNames.some((athleteName) =>
-    playerNames.some(
-      (playerName) =>
-        athleteName === playerName ||
-        athleteName.includes(playerName) ||
-        playerName.includes(athleteName),
-    ),
+    playerNames.some((playerName) => namesMatch(athleteName, playerName)),
   )
 }
 
@@ -162,12 +175,7 @@ function eventMatchesPlayer(player, event) {
   }
 
   return eventNames.some((eventName) =>
-    playerNames.some(
-      (playerName) =>
-        eventName === playerName ||
-        eventName.includes(playerName) ||
-        playerName.includes(eventName),
-    ),
+    playerNames.some((playerName) => namesMatch(eventName, playerName)),
   )
 }
 
